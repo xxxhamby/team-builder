@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roster Management App</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -20,8 +21,12 @@
                 <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
                 <label for="csv-file-input" class="btn btn-secondary">Select CSV File</label>
                 <button id="import-button" class="btn btn-primary">Import</button>
-                <button id="export-button" class="btn">Export</button>
             </div>
+            <div class="io-section">
+                <button id="export-button" class="btn">Export Roster</button>
+                <button id="clear-teams-button" class="btn btn-danger">Clear All Teams</button>
+            </div>
+            
             <span id="file-name-display">No file chosen</span>
             
             <ul id="roster-list" class="roster-list-group">
