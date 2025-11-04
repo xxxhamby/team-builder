@@ -14,6 +14,26 @@ header {
     text-align: center;
     border-bottom: 1px solid #555;
 }
+
+/* NEW: Event Selector Styles */
+.event-selector-container {
+    padding: 10px 0;
+    background-color: #2a2a2a;
+    border-bottom: 1px solid #555;
+    font-size: 1.1em;
+}
+.event-selector-container label {
+    margin-right: 10px;
+}
+#event-selector {
+    font-size: 1em;
+    padding: 5px;
+    background-color: #555;
+    color: #eee;
+    border: 1px solid #888;
+    border-radius: 4px;
+}
+
 main {
     display: flex;
     justify-content: space-around;
@@ -156,33 +176,16 @@ h1, h2, h3 { margin-top: 0; color: #fff; }
     align-items: center;
     gap: 8px;
 }
-.player-li:hover {
-    background-color: #666;
-}
-
-/* NEW: Renamed role-leader */
-.role-group_leader {
-    background-color: #4a82c4;
-    font-weight: bold;
-}
-.role-rally_leader {
-    background-color: #5f7a5f;
-}
+.player-li:hover { background-color: #666; }
+.role-group_leader { background-color: #4a82c4; font-weight: bold; }
+.role-rally_leader { background-color: #5f7a5f; }
 .role-member { /* No special style */ }
+.player-icon { font-size: 16px; line-height: 1; }
+.sortable-ghost { opacity: 0.4; background: #4a90e2; }
 
-.player-icon {
-    font-size: 16px;
-    line-height: 1;
-}
-
-.sortable-ghost {
-    opacity: 0.4;
-    background: #4a90e2;
-}
-
-/* --- NEW: Context Menu Styles --- */
+/* --- Context Menu Styles --- */
 .context-menu {
-    display: none; /* Hidden by default */
+    display: none;
     position: absolute;
     background-color: #555;
     border: 1px solid #888;
