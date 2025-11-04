@@ -96,18 +96,26 @@ h1, h2, h3 { margin-top: 0; color: #fff; }
     margin-left: 5px;
 }
 
-/* --- Dynamic Team Grid --- */
-#team-grid-dynamic { display: flex; flex-wrap: wrap; gap: 15px; }
+/* --- NEW 3-COLUMN LAYOUT --- */
+#team-grid-dynamic { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 15px; 
+}
 .team-container {
     position: relative;
     background-color: #2a2a2a;
     border: 1px solid #444;
     border-radius: 5px;
     padding: 10px;
-    flex-basis: 48%;
+    /* CHANGED: Was 48%, now 31% */
+    flex-basis: 31%; 
     flex-grow: 1;
-    min-width: 300px;
+    /* CHANGED: Was 300px, now 250px */
+    min-width: 250px; 
 }
+/* --- END OF CHANGES --- */
+
 .team-container h3[contenteditable="true"] {
     padding: 5px;
     border: 1px dashed transparent;
@@ -120,11 +128,8 @@ h1, h2, h3 { margin-top: 0; color: #fff; }
     border-color: #4a90e2;
     outline: none;
 }
-
-/* --- THIS IS THE CHANGED RULE --- */
 .team-description {
     width: 95%;
-    /* NEW: Set a much larger starting height */
     height: 15em; 
     line-height: 1.5;
     background-color: #444;
@@ -135,10 +140,8 @@ h1, h2, h3 { margin-top: 0; color: #fff; }
     padding: 5px;
     margin-bottom: 10px;
     resize: none; 
-    overflow: hidden; /* Auto-expand logic still needs this */
+    overflow: hidden;
 }
-/* --- END OF CHANGE --- */
-
 .delete-team-btn {
     position: absolute;
     top: 10px;
