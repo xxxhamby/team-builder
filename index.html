@@ -14,12 +14,13 @@
 
     <main>
         <div class="container" id="roster-container">
-            <h2>My Roster</h2>
+            <h2 id="roster-heading">My Roster</h2>
             
             <div class="io-section">
                 <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
-                <label for="csv-file-input" class="btn">Choose CSV File</label>
-                <button id="import-button" class="btn">Import</button>
+                <label for="csv-file-input" class="btn btn-secondary">Select CSV File</label>
+                
+                <button id="import-button" class="btn btn-primary">Import</button>
                 <button id="export-button" class="btn">Export</button>
             </div>
             
@@ -31,7 +32,7 @@
         </div>
 
         <div class="container" id="teams-container">
-            <h2>My Teams</h2>
+            <h2 id="teams-heading">My Teams</h2>
             <p>This is where your teams will go.</p>
         </div>
     </main>
