@@ -7,7 +7,6 @@ body {
     margin: 0;
     padding: 0;
 }
-
 header {
     background: #333;
     color: #fff;
@@ -15,7 +14,6 @@ header {
     text-align: center;
     border-bottom: 1px solid #555;
 }
-
 main {
     display: flex;
     justify-content: space-around;
@@ -24,7 +22,6 @@ main {
     gap: 1rem; 
     align-items: flex-start;
 }
-
 .container {
     background: #333;
     border: 1px solid #555;
@@ -32,37 +29,23 @@ main {
     padding: 1rem;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
-
-#roster-container {
-    width: 30%;
-    min-width: 300px;
-}
-
-#teams-area {
-    width: 65%;
-    min-width: 400px;
-}
-
+#roster-container { width: 30%; min-width: 300px; }
+#teams-area { width: 65%; min-width: 400px; }
 .teams-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
 }
-
 #add-team-button {
     font-size: 24px;
     font-weight: bold;
     padding: 0px 12px;
     line-height: 30px;
 }
+h1, h2, h3 { margin-top: 0; color: #fff; }
 
-h1, h2, h3 {
-    margin-top: 0;
-    color: #fff;
-}
-
-/* --- Styles for Buttons and IO --- */
+/* --- Buttons and IO --- */
 .io-section {
     display: flex;
     align-items: center;
@@ -70,7 +53,6 @@ h1, h2, h3 {
     margin-bottom: 10px;
     flex-wrap: wrap;
 }
-
 .btn {
     padding: 8px 12px;
     border: none;
@@ -85,15 +67,8 @@ h1, h2, h3 {
 .btn.btn-primary:hover { background-color: #5aa1f0; }
 .btn.btn-secondary { background-color: #6a6a6a; }
 .btn.btn-secondary:hover { background-color: #888; }
-
-/* NEW: Danger button style */
-.btn.btn-danger {
-    background-color: #a04040;
-}
-.btn.btn-danger:hover {
-    background-color: #c04040;
-}
-
+.btn.btn-danger { background-color: #a04040; }
+.btn.btn-danger:hover { background-color: #c04040; }
 #file-name-display {
     font-style: italic;
     font-size: 14px;
@@ -101,13 +76,8 @@ h1, h2, h3 {
     margin-left: 5px;
 }
 
-/* --- Dynamic Team Grid Layout --- */
-#team-grid-dynamic {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-}
-
+/* --- Dynamic Team Grid --- */
+#team-grid-dynamic { display: flex; flex-wrap: wrap; gap: 15px; }
 .team-container {
     position: relative;
     background-color: #2a2a2a;
@@ -118,7 +88,6 @@ h1, h2, h3 {
     flex-grow: 1;
     min-width: 300px;
 }
-
 .team-container h3[contenteditable="true"] {
     padding: 5px;
     border: 1px dashed transparent;
@@ -131,7 +100,6 @@ h1, h2, h3 {
     border-color: #4a90e2;
     outline: none;
 }
-
 .team-description {
     width: 95%;
     height: 2.2em; 
@@ -146,7 +114,6 @@ h1, h2, h3 {
     resize: none; 
     overflow: hidden;
 }
-
 .delete-team-btn {
     position: absolute;
     top: 10px;
@@ -166,8 +133,7 @@ h1, h2, h3 {
 .team-container:hover .delete-team-btn { opacity: 1; }
 .delete-team-btn:hover { background: #c04040; }
 
-
-/* --- Roster List (shared style) --- */
+/* --- Roster List & Player Items --- */
 .roster-list-group {
     list-style-type: none;
     padding: 0;
@@ -180,18 +146,38 @@ h1, h2, h3 {
     padding: 5px;
 }
 
-/* NEW: Add grab cursor and "ghost" class */
-.roster-list-group li {
+/* NEW: Renamed from li to .player-li */
+.player-li {
     background-color: #555;
     color: #eee;
     padding: 10px;
     margin-bottom: 5px;
     border-radius: 4px;
-    cursor: grab; /* Indicates item is draggable */
+    cursor: grab; /* Drag-and-drop cursor */
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Space between icon and name */
+}
+.player-li:hover {
+    background-color: #666;
 }
 
-.roster-list-group li:hover {
-    background-color: #666;
+/* NEW: Role Styles */
+.role-leader {
+    background-color: #4a82c4; /* A slightly different blue */
+    font-weight: bold;
+}
+.role-rally {
+    background-color: #5f7a5f; /* A subtle green */
+}
+.role-member {
+    /* No special style */
+}
+
+/* This is the icon shown *before* the name */
+.player-icon {
+    font-size: 16px;
+    line-height: 1;
 }
 
 .sortable-ghost {
