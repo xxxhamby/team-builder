@@ -13,12 +13,24 @@
     </header>
 
     <main>
-        <div class="container">
+        <div class="container" id="roster-container">
             <h2>My Roster</h2>
-            <p>This is where your roster list will go.</p>
+            
+            <div class="io-section">
+                <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
+                <label for="csv-file-input" class="btn">Choose CSV File</label>
+                <button id="import-button" class="btn">Import</button>
+                <button id="export-button" class="btn">Export</button>
+            </div>
+            
+            <span id="file-name-display">No file chosen</span>
+
+            <ul id="roster-list">
+                </ul>
+
         </div>
 
-        <div class="container">
+        <div class="container" id="teams-container">
             <h2>My Teams</h2>
             <p>This is where your teams will go.</p>
         </div>
