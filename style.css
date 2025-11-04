@@ -96,10 +96,12 @@ h1, h2, h3 { margin-top: 0; color: #fff; }
     margin-left: 5px;
 }
 
-/* --- NEW 3-COLUMN LAYOUT --- */
+/* --- THIS IS THE CHANGED SECTION --- */
 #team-grid-dynamic { 
-    display: flex; 
-    flex-wrap: wrap; 
+    /* CHANGED: Switched from 'flex' to 'grid' */
+    display: grid;
+    /* CHANGED: Explicitly create 3 equal-fraction columns */
+    grid-template-columns: repeat(3, 1fr);
     gap: 15px; 
 }
 .team-container {
@@ -108,11 +110,8 @@ h1, h2, h3 { margin-top: 0; color: #fff; }
     border: 1px solid #444;
     border-radius: 5px;
     padding: 10px;
-    /* CHANGED: Was 48%, now 31% */
-    flex-basis: 31%; 
-    flex-grow: 1;
-    /* CHANGED: Was 300px, now 250px */
-    min-width: 250px; 
+    /* CHANGED: Removed all flexbox properties (flex-basis, grow, min-width)
+       The grid now handles all sizing automatically. */
 }
 /* --- END OF CHANGES --- */
 
