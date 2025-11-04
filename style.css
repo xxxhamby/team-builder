@@ -22,7 +22,6 @@ main {
     padding: 1rem;
     flex-wrap: wrap; 
     gap: 1rem; 
-    /* Align containers to the top */
     align-items: flex-start;
 }
 
@@ -44,10 +43,9 @@ main {
     min-width: 400px;
 }
 
-/* NEW: Header for the Teams area */
 .teams-header {
     display: flex;
-    justify-content: space-between; /* Puts title on left, button on right */
+    justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
 }
@@ -88,6 +86,14 @@ h1, h2, h3 {
 .btn.btn-secondary { background-color: #6a6a6a; }
 .btn.btn-secondary:hover { background-color: #888; }
 
+/* NEW: Danger button style */
+.btn.btn-danger {
+    background-color: #a04040;
+}
+.btn.btn-danger:hover {
+    background-color: #c04040;
+}
+
 #file-name-display {
     font-style: italic;
     font-size: 14px;
@@ -95,7 +101,7 @@ h1, h2, h3 {
     margin-left: 5px;
 }
 
-/* --- NEW: Dynamic Team Grid Layout --- */
+/* --- Dynamic Team Grid Layout --- */
 #team-grid-dynamic {
     display: flex;
     flex-wrap: wrap;
@@ -103,36 +109,31 @@ h1, h2, h3 {
 }
 
 .team-container {
-    position: relative; /* For the delete button */
+    position: relative;
     background-color: #2a2a2a;
     border: 1px solid #444;
     border-radius: 5px;
     padding: 10px;
-    flex-basis: 48%; /* Two teams per row, with gap */
+    flex-basis: 48%;
     flex-grow: 1;
     min-width: 300px;
 }
 
-/* NEW: Editable Title Style */
 .team-container h3[contenteditable="true"] {
     padding: 5px;
-    border: 1px dashed transparent; /* Show border on hover */
+    border: 1px dashed transparent;
     border-radius: 4px;
     cursor: text;
 }
-.team-container h3[contenteditable="true"]:hover {
-    border-color: #666;
-}
+.team-container h3[contenteditable="true"]:hover { border-color: #666; }
 .team-container h3[contenteditable="true"]:focus {
     background-color: #444;
     border-color: #4a90e2;
     outline: none;
 }
 
-/* NEW: Auto-expanding Textarea */
 .team-description {
     width: 95%;
-    /* Start as one line */
     height: 2.2em; 
     line-height: 1.5;
     background-color: #444;
@@ -142,12 +143,10 @@ h1, h2, h3 {
     font-family: Arial, sans-serif;
     padding: 5px;
     margin-bottom: 10px;
-    /* This is key */
     resize: none; 
     overflow: hidden;
 }
 
-/* NEW: Delete Team Button */
 .delete-team-btn {
     position: absolute;
     top: 10px;
@@ -164,12 +163,8 @@ h1, h2, h3 {
     cursor: pointer;
     opacity: 0.5;
 }
-.team-container:hover .delete-team-btn {
-    opacity: 1;
-}
-.delete-team-btn:hover {
-    background: #c04040;
-}
+.team-container:hover .delete-team-btn { opacity: 1; }
+.delete-team-btn:hover { background: #c04040; }
 
 
 /* --- Roster List (shared style) --- */
@@ -185,15 +180,21 @@ h1, h2, h3 {
     padding: 5px;
 }
 
+/* NEW: Add grab cursor and "ghost" class */
 .roster-list-group li {
     background-color: #555;
     color: #eee;
     padding: 10px;
     margin-bottom: 5px;
     border-radius: 4px;
-    /* We'll add cursor: grab back in the next step */
+    cursor: grab; /* Indicates item is draggable */
 }
 
 .roster-list-group li:hover {
     background-color: #666;
+}
+
+.sortable-ghost {
+    opacity: 0.4;
+    background: #4a90e2;
 }
