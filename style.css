@@ -1,199 +1,106 @@
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyCWnB4VDxuH60J06E0XMGiNzD2m1Rq7HWw",
-  authDomain: "team-builder-42438.firebaseapp.com",
-  projectId: "team-builder-42438",
-  storageBucket: "team-builder-42438.firebasestorage.app",
-  messagingSenderId: "215714435049",
-  appId: "1:215714435049:web:8b136178e7f8379bf90578",
-  measurementId: "G-RJ0ZB7FJ0D"
-};
+/* Dark Mode Theme */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #222;
+    color: #eee;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0;
+}
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+header {
+    background: #333;
+    color: #fff;
+    padding: 1rem 0;
+    text-align: center;
+    border-bottom: 1px solid #555;
+}
 
-// --- NEW Application Code ---
+main {
+    display: flex;
+    justify-content: space-around;
+    padding: 1rem;
+    flex-wrap: wrap; 
+    gap: 1rem; 
+}
 
-// Wait for the HTML document to be fully loaded before running our code
-document.addEventListener('DOMContentLoaded', () => {
+.container {
+    background: #333;
+    border: 1px solid #555;
+    border-radius: 5px;
+    padding: 1rem;
+    width: 45%;
+    min-width: 300px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
 
-    // Get references to our new HTML elements
-    const fileInput = document.getElementById('csv-file-input');
-    const importButton = document.getElementById('import-button');
-    const exportButton = document.getElementById('export-button');
-    const rosterList = document.getElementById('roster-list');
-    const fileNameDisplay = document.getElementById('file-name-display');
+h1, h2 {
+    margin-top: 0;
+    color: #fff;
+}
 
-    let chosenFile = null;
+/* --- Styles for Buttons and IO --- */
+.io-section {
+    display: flex;
+    align-items: center; /* Vertically align items */
+    gap: 10px; /* Space between elements */
+    margin-bottom: 10px;
+    flex-wrap: wrap; /* Allow buttons to stack on small screens */
+}
 
-    // Listen for when a file is chosen
-    fileInput.addEventListener('change', (event) => {
-        chosenFile = event.target.files[0];
-        if (chosenFile) {
-            fileNameDisplay.textContent = chosenFile.name;
-        } else {
-            fileNameDisplay.textContent = 'No file chosen';
-        }
-    });
+.btn {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #fff;
+    background-color: #555; /* Default button color */
+}
 
-    // Listen for click on the Import button
-    importButton.addEventListener('click', () => {
-        if (!chosenFile) {
-            alert('Please choose a CSV file first.');
-            return;
-        }
-        
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const csvData = event.target.result;
-            parseAndUpload(csvData);
-        };
-        reader.readAsText(chosenFile);
-    });
+.btn:hover {
+    background-color: #777;
+}
 
-    // Listen for click on the Export button
-    exportButton.addEventListener('click', exportRosterToCSV);
+/* NEW: Primary button style (for Import) */
+.btn.btn-primary {
+    background-color: #4a90e2; /* Blue */
+}
+.btn.btn-primary:hover {
+    background-color: #5aa1f0;
+}
 
-    // --- Core Functions ---
+/* NEW: Secondary button style (for Select) */
+.btn.btn-secondary {
+    background-color: #6a6a6a; /* Gray */
+}
+.btn.btn-secondary:hover {
+    background-color: #888;
+}
 
-    /**
-     * Parses CSV data, finds the "Player" column, and uploads to Firebase
-     */
-    function parseAndUpload(csvData) {
-        // Split into rows, trimming any extra whitespace
-        const rows = csvData.split('\n').map(row => row.trim());
-        if (rows.length < 2) {
-            alert('CSV file is empty or has no data.');
-            return;
-        }
 
-        // Get header row and clean it
-        const header = rows[0].split(',').map(h => h.trim().replace(/"/g, ''));
-        
-        // Find the "Player" column
-        const playerIndex = header.indexOf('Player');
-        
-        if (playerIndex === -1) {
-            alert('Could not find a "Player" column in the CSV file.');
-            return;
-        }
+#file-name-display {
+    font-style: italic;
+    font-size: 14px;
+    color: #aaa;
+    margin-left: 5px; /* Add some space */
+}
 
-        // Get a new "batch" operation from Firebase
-        const batch = db.batch();
-        let playersAdded = 0;
+/* --- Styles for Roster List --- */
+#roster-list {
+    list-style-type: none; 
+    padding: 0;
+    margin-top: 1rem;
+    max-height: 400px; 
+    overflow-y: auto;
+}
 
-        // Loop through data rows (skip header row 0)
-        for (let i = 1; i < rows.length; i++) {
-            if (rows[i]) { // Skip empty rows
-                const rowData = rows[i].split(',');
-                const playerName = rowData[playerIndex];
+#roster-list li {
+    background-color: #444; 
+    padding: 10px;
+    border-bottom: 1px solid #555;
+}
 
-                if (playerName) {
-                    const cleanedName = playerName.trim().replace(/"/g, '');
-                    
-                    // Create a new document in the "roster" collection
-                    // We use the player's name as the document ID for easy lookup
-                    const playerRef = db.collection('roster').doc(cleanedName);
-                    
-                    // Add player to the batch
-                    batch.set(playerRef, {
-                        name: cleanedName,
-                        availability: 'Unknown' // Default availability
-                    });
-                    playersAdded++;
-                }
-            }
-        }
-
-        // "Commit" the batch to run all "set" operations at once
-        batch.commit()
-            .then(() => {
-                alert(`Successfully imported ${playersAdded} players!`);
-                loadRoster(); // Reload the roster list from the database
-                fileNameDisplay.textContent = 'No file chosen'; // Reset
-                fileInput.value = ''; // Reset
-                chosenFile = null;
-            })
-            .catch(error => {
-                console.error('Error importing roster: ', error);
-                alert('An error occurred while importing the roster.');
-            });
-    }
-
-    /**
-     * Fetches all documents from the "roster" collection and displays them
-     */
-    function loadRoster() {
-        // Clear the current list
-        rosterList.innerHTML = '<li>Loading...</li>';
-
-        db.collection('roster').orderBy('name').get()
-            .then(querySnapshot => {
-                // Clear the "Loading..." message
-                rosterList.innerHTML = ''; 
-                
-                if (querySnapshot.empty) {
-                    rosterList.innerHTML = '<li>Roster is empty.</li>';
-                    return;
-                }
-
-                querySnapshot.forEach(doc => {
-                    const player = doc.data();
-                    
-                    // Create a new list item element
-                    const li = document.createElement('li');
-                    li.textContent = player.name;
-                    // We can add more info here later, like availability
-                    
-                    rosterList.appendChild(li);
-                });
-            })
-            .catch(error => {
-                console.error('Error loading roster: ', error);
-                rosterList.innerHTML = '<li>Error loading roster.</li>';
-            });
-    }
-
-    /**
-     * Fetches the current roster and downloads it as a CSV file
-     */
-    async function exportRosterToCSV() {
-        try {
-            const querySnapshot = await db.collection('roster').orderBy('name').get();
-            
-            if (querySnapshot.empty) {
-                alert('Roster is empty, nothing to export.');
-                return;
-            }
-
-            let csvContent = "Name,Availability\n"; // CSV Header
-
-            querySnapshot.forEach(doc => {
-                const player = doc.data();
-                csvContent += `"${player.name}","${player.availability}"\n`;
-            });
-
-            // Create a "dummy" link to trigger the download
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            
-            link.setAttribute('href', url);
-            link.setAttribute('download', 'roster_export.csv');
-            link.style.visibility = 'hidden';
-            
-            document.body.appendChild(link);
-            link.click(); // Programmatically click the link
-            document.body.removeChild(link); // Clean up
-
-        } catch (error) {
-            console.error('Error exporting roster: ', error);
-            alert('An error occurred while exporting.');
-        }
-    }
-
-    // --- Initial Page Load ---
-    // Load the roster from Firebase as soon as the page is ready
-    loadRoster(); 
-});
+#roster-list li:last-child {
+    border-bottom: none;
+}
