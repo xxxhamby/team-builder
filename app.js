@@ -3,7 +3,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCWnB4VDxuH60J06E0XMGiNzD2m1Rq7HWw",
   authDomain: "team-builder-42438.firebaseapp.com",
   projectId: "team-builder-42438",
-  storageBucket: "team-builder-42438.firebasestorage.app",
+  storageBucket: "team-builder-42438.appspot.com", // <-- THIS IS THE FIX
   messagingSenderId: "215714435049",
   appId: "1:215714435049:web:8b136178e7f8379bf90578",
   measurementId: "G-RJ0ZB7FJ0D"
@@ -43,11 +43,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     exportButton.addEventListener('click', exportRosterToCSV);
 
-    // --- NEW: Team Listeners ---
+    // --- Team Listeners ---
     addTeamButton.addEventListener('click', addNewTeam);
 
 
-    // --- CSV Parsing Function (Unchanged) ---
+    // --- CSV Parsing Function ---
     function parseAndUpload(csvData) {
         const rows = csvData.split('\n').map(row => row.trim());
         if (rows.length < 2) return alert('CSV file is empty.');
@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             batch.set(playerRef, {
                                 name: cleanedName,
                                 availability: 'Unknown',
-                                team: 'unassigned' // All imported players go to main roster
+                                team: 'unassigned'
                             });
                             playersAdded++;
                         }
@@ -81,12 +81,12 @@ document.addEventListener('DOMContentLoaded', () => {
         batch.commit()
             .then(() => {
                 alert(`Successfully imported ${playersAdded} players!`);
-                loadData(); // Reload all data
+                loadData();
             })
             .catch(error => console.error('FIREBASE IMPORT ERROR: ', error));
     }
 
-    // --- CSV Export Function (Unchanged) ---
+    // --- CSV Export Function ---
     async function exportRosterToCSV() {
         try {
             const querySnapshot = await db.collection('roster').orderBy('name').get();
@@ -108,11 +108,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { console.error('FIREBASE EXPORT ERROR: ', error); }
     }
     
-    // --- NEW: Data Loading and Rendering ---
+    // --- Data Loading and Rendering ---
 
-    /**
-     * Main function to load all data from Firebase
-     */
     async function loadData() {
         console.log("Attempting to load data from Firebase...");
         mainRosterList.innerHTML = '<li>Loading...</li>';
@@ -122,22 +119,22 @@ document.addEventListener('DOMContentLoaded', () => {
         let totalCount = 0;
 
         try {
-            // 1. Load all teams first
+            // 1. Load all teams
             const teamsSnapshot = await db.collection('teams').get();
             console.log(`Found ${teamsSnapshot.size} teams.`);
             
-            // 2. Load all players (roster)
+            // 2. Load all players
             const rosterSnapshot = await db.collection('roster').get();
             console.log(`Found ${rosterSnapshot.size} players.`);
             totalCount = rosterSnapshot.size;
             
-            // 3. Create a map of players for easy lookup
+            // 3. Map players to teams
             const playersByTeam = new Map();
-            playersByTeam.set('unassigned', []); // Array for unassigned players
+            playersByTeam.set('unassigned', []);
             
             rosterSnapshot.forEach(doc => {
                 const player = doc.data();
-                player.id = doc.id; // Store the doc ID
+                player.id = doc.id;
                 const teamId = player.team || 'unassigned';
                 
                 if (!playersByTeam.has(teamId)) {
@@ -150,21 +147,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // 4. Render the unassigned players
+            // 4. Render unassigned players
             mainRosterList.innerHTML = '';
             playersByTeam.get('unassigned').sort((a,b) => a.name.localeCompare(b.name)).forEach(player => {
                 mainRosterList.appendChild(createPlayerLi(player));
             });
 
-            // 5. Render each team and its players
+            // 5. Render teams
             teamsSnapshot.forEach(teamDoc => {
                 const teamData = teamDoc.data();
-                teamData.id = teamDoc.id; // Store the doc ID
+                teamData.id = teamDoc.id;
                 const teamPlayers = playersByTeam.get(teamData.id) || [];
                 renderTeam(teamData, teamPlayers);
             });
 
-            // 6. Update main roster heading
+            // 6. Update heading
             rosterHeading.textContent = `My Roster (${assignedCount} / ${totalCount})`;
             console.log("Data loading and rendering complete.");
             
@@ -174,19 +171,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    /**
-     * Creates and returns an <li> element for a player
-     */
     function createPlayerLi(player) {
         const li = document.createElement('li');
         li.textContent = player.name;
-        li.dataset.id = player.id; // The player's document ID
+        li.dataset.id = player.id;
         return li;
     }
 
-    /**
-     * Creates the HTML for a single team and adds it to the page
-     */
     function renderTeam(teamData, teamPlayers) {
         const teamContainer = document.createElement('div');
         teamContainer.className = 'team-container';
@@ -234,9 +225,6 @@ document.addEventListener('DOMContentLoaded', () => {
         teamGrid.appendChild(teamContainer);
     }
     
-    /**
-     * Creates a new team document in Firebase
-     */
     function addNewTeam() {
         console.log("Adding new team...");
         db.collection('teams').add({
@@ -250,9 +238,6 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch(error => console.error("Error adding team: ", error));
     }
     
-    /**
-     * Deletes a team and moves its players to 'unassigned'
-     */
     async function deleteTeam(teamId, teamName) {
         if (!confirm(`Are you sure you want to delete "${teamName}"? All players will be moved to the main roster.`)) {
             return;
@@ -283,16 +268,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    /**
-     * Helper to update a single field in a team document
-     */
     function updateTeamData(teamId, dataToUpdate) {
         db.collection('teams').doc(teamId).update(dataToUpdate)
             .then(() => console.log(`Team ${teamId} updated:`, dataToUpdate))
             .catch(error => console.error("Error updating team: ", error));
     }
 
-
     // --- Initial Page Load ---
-    loadData(); // Load all teams and players
+    loadData();
 });
