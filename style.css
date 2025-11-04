@@ -1,9 +1,7 @@
-/* Dark Mode Theme based on the example */
+/* Dark Mode Theme */
 body {
     font-family: Arial, sans-serif;
-    /* Very dark background for the whole page */
     background-color: #222;
-    /* Light text color for the whole page */
     color: #eee;
     line-height: 1.6;
     margin: 0;
@@ -11,12 +9,10 @@ body {
 }
 
 header {
-    /* This background is already dark, which is perfect */
     background: #333;
     color: #fff;
     padding: 1rem 0;
     text-align: center;
-    /* Add a subtle border at the bottom */
     border-bottom: 1px solid #555;
 }
 
@@ -24,33 +20,76 @@ main {
     display: flex;
     justify-content: space-around;
     padding: 1rem;
-    flex-wrap: wrap; /* Allows containers to stack on small screens */
-    gap: 1rem; /* Adds space between containers */
+    flex-wrap: wrap; 
+    gap: 1rem; 
 }
 
 .container {
-    /* This is the "card" background color */
     background: #333;
-    border: 1px solid #555; /* Lighter border for definition */
+    border: 1px solid #555;
     border-radius: 5px;
     padding: 1rem;
     width: 45%;
-    min-width: 300px; /* Prevents them from getting too squished */
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Adds a subtle shadow */
+    min-width: 300px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
-/* Make headings a bit brighter */
 h1, h2 {
     margin-top: 0;
     color: #fff;
 }
 
-/* Style for links, which we will add later */
 a {
-    color: #4a90e2; /* A nice blue for links */
+    color: #4a90e2; 
     text-decoration: none;
 }
 
 a:hover {
     text-decoration: underline;
+}
+
+/* --- NEW Styles for Buttons and IO --- */
+.io-section {
+    display: flex;
+    gap: 10px; /* Space between buttons */
+    margin-bottom: 10px;
+}
+
+.btn {
+    background-color: #555;
+    color: #fff;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn:hover {
+    background-color: #777;
+}
+
+#file-name-display {
+    font-style: italic;
+    font-size: 14px;
+    color: #aaa;
+}
+
+/* --- NEW Styles for Roster List --- */
+#roster-list {
+    list-style-type: none; /* Removes bullets */
+    padding: 0;
+    margin-top: 1rem;
+    max-height: 400px; /* Adds a scrollbar if the list is long */
+    overflow-y: auto;
+}
+
+#roster-list li {
+    background-color: #444; /* Slightly lighter than the card */
+    padding: 10px;
+    border-bottom: 1px solid #555;
+}
+
+#roster-list li:last-child {
+    border-bottom: none; /* No border on the last item */
 }
