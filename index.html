@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roster Management App</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -24,55 +23,19 @@
                 <button id="export-button" class="btn">Export</button>
             </div>
             <span id="file-name-display">No file chosen</span>
-
-            <button id="move-selected-button" class="btn btn-primary" style="display: none; margin-top: 10px;">Move Selected</button>
             
             <ul id="roster-list" class="roster-list-group">
                 </ul>
         </div>
 
         <div class="container" id="teams-area">
-            <h2 id="teams-heading">My Teams</h2>
-            
-            <div id="team-grid">
-                
-                <div class="team-container">
-                    <h3 class="team-heading" id="team-1-heading">Team 1 (0)</h3>
-                    <textarea class="team-description" placeholder="Add description..."></textarea>
-                    <ul id="team-1" class="roster-list-group"></ul>
-                </div>
-
-                <div class="team-container">
-                    <h3 class="team-heading" id="team-2-heading">Team 2 (0)</h3>
-                    <textarea class="team-description" placeholder="Add description..."></textarea>
-                    <ul id="team-2" class="roster-list-group"></ul>
-                </div>
-
-                <div class="team-container">
-                    <h3 class="team-heading" id="team-3-heading">Team 3 (0)</h3>
-                    <textarea class="team-description" placeholder="Add description..."></textarea>
-                    <ul id="team-3" class="roster-list-group"></ul>
-                </div>
-
-                <div class="team-container">
-                    <h3 class="team-heading" id="team-4-heading">Team 4 (0)</h3>
-                    <textarea class="team-description" placeholder="Add description..."></textarea>
-                    <ul id="team-4" class="roster-list-group"></ul>
-                </div>
-
-                <div class="team-container">
-                    <h3 class="team-heading" id="team-5-heading">Team 5 (0)</h3>
-                    <textarea class="team-description" placeholder="Add description..."></textarea>
-                    <ul id="team-5" class="roster-list-group"></ul>
-                </div>
-
-                <div class="team-container">
-                    <h3 class="team-heading" id="team-6-heading">Team 6 (0)</h3>
-                    <textarea class="team-description" placeholder="Add description..."></textarea>
-                    <ul id="team-6" class="roster-list-group"></ul>
-                </div>
-
+            <div class="teams-header">
+                <h2 id="teams-heading">My Teams</h2>
+                <button id="add-team-button" class="btn">+</button>
             </div>
+            
+            <div id="team-grid-dynamic">
+                </div>
         </div>
     </main>
 
