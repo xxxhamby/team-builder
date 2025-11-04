@@ -1,22 +1,22 @@
-// This is a placeholder for your Firebase configuration.
-// You will get this from the Firebase website.
+// Your web app's Firebase configuration
+// This is the object you just found in the Firebase console.
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyCWnB4VDxuH60J06E0XMGiNzD2m1Rq7HWw",
+  authDomain: "team-builder-42438.firebaseapp.com",
+  projectId: "team-builder-42438",
+  storageBucket: "team-builder-42438.firebasestorage.app",
+  messagingSenderId: "215714435049",
+  appId: "1:215714435049:web:8b136178e7f8379bf90578",
+  measurementId: "G-RJ0ZB7FJ0D"
 };
 
 // Initialize Firebase
+// This syntax matches the <script> tags in your index.html file
 firebase.initializeApp(firebaseConfig);
 
 // Get a reference to the Firestore database
+// This is the most important part for saving our roster!
 const db = firebase.firestore();
 
-// --- Application Code Will Go Here ---
-console.log("Firebase is connected!");
-
-// Example: You can test if it's working by checking the console in your browser.
-// We will add all the functions for your roster here later.
+// Log to the console (in your browser's developer tools) to confirm it's working
+console.log("Firebase is connected and database is ready!");
