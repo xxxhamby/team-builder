@@ -96,13 +96,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (playerName) {
                         const cleanedName = playerName.trim().replace(/"/g, '');
                         if (cleanedName) {
-                            const playerRef = db.collection('roster').doc(cleanedName);
                             
-                            // NEW: We add a 'team' field
+                            // --- THIS IS THE FIX ---
+                            // Create a "safe" ID by replacing / with _
+                            const playerDocId = cleanedName.replace(/\//g, '_');
+                            
+                            // Use the safe ID for the document reference
+                            const playerRef = db.collection('roster').doc(playerDocId);
+                            // --- END OF FIX ---
+
                             batch.set(playerRef, {
-                                name: cleanedName,
+                                name: cleanedName, // Save the REAL name (with /)
                                 availability: 'Unknown',
-                                team: 'unassigned' // NEW: For assigned counter
+                                team: 'unassigned' 
                             });
                             playersAdded++;
                         }
@@ -157,17 +163,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 querySnapshot.forEach(doc => {
                     const player = doc.data();
                     
-                    // NEW: Check if player is assigned
                     if (player.team && player.team !== 'unassigned') {
                         assignedCount++;
                     }
 
                     const li = document.createElement('li');
-                    li.textContent = player.name;
+                    li.textContent = player.name; // This will show "chuina/portgasdace"
                     rosterList.appendChild(li);
                 });
 
-                // NEW: Update roster heading
                 rosterHeading.textContent = `My Roster (${assignedCount} / ${totalCount})`;
                 console.log("Roster loaded successfully.");
 
@@ -188,7 +192,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // NEW: Export includes 'team'
             let csvContent = "Name,Availability,Team\n"; 
 
             querySnapshot.forEach(doc => {
