@@ -15,10 +15,7 @@ const db = firebase.firestore();
 
 let sortableInstances = [];
 let currentlyClickedPlayerId = null;
-
-// The MOST important variable: tracks the currently selected event
 let activeEventId = null;
-// NEW: A list of all available event IDs for the import function
 let allEventIds = [];
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -40,6 +37,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const setRoleRallyLeader = document.getElementById('set-role-rally_leader');
     const setRoleMember = document.getElementById('set-role-member');
     const eventSelector = document.getElementById('event-selector');
+    
+    // NEW: Get Modal elements
+    const helpButton = document.getElementById('help-button');
+    const modalOverlay = document.getElementById('modal-overlay');
+    const modalCloseBtn = document.getElementById('modal-close-btn');
 
     let chosenFile = null;
 
@@ -59,15 +61,27 @@ document.addEventListener('DOMContentLoaded', () => {
     exportButton.addEventListener('click', exportRosterToCSV);
     addTeamButton.addEventListener('click', addNewTeam);
     clearTeamsButton.addEventListener('click', clearAllTeams);
-
-    // UPDATED: Event selector listener now re-loads all data
     eventSelector.addEventListener('change', () => {
         activeEventId = eventSelector.value;
         console.log(`Active event changed to: ${activeEventId}`);
-        loadData(); // Load the data for the newly selected event
+        loadData();
     });
 
-    // --- Context Menu Listeners (Unchanged) ---
+    // --- NEW: Modal Listeners ---
+    helpButton.addEventListener('click', () => {
+        modalOverlay.style.display = 'flex';
+    });
+    modalCloseBtn.addEventListener('click', () => {
+        modalOverlay.style.display = 'none';
+    });
+    // Also close modal by clicking on the background
+    modalOverlay.addEventListener('click', (event) => {
+        if (event.target === modalOverlay) {
+            modalOverlay.style.display = 'none';
+        }
+    });
+
+    // --- Context Menu Listeners ---
     const showContextMenu = (event) => {
         event.preventDefault();
         const li = event.target.closest('.player-li');
@@ -93,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentlyClickedPlayerId) updatePlayerRole(currentlyClickedPlayerId, 'member');
     });
 
-    // --- NEW: CSV Parsing Function (The "Big Rewrite" version) ---
+    // --- CSV Parsing Function ---
     async function parseAndUpload(csvData) {
         const rows = csvData.split('\n').map(row => row.trim());
         if (rows.length < 2) return alert('CSV file is empty.');
@@ -102,20 +116,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const playerIndex = headerRow.indexOf('Player');
         if (playerIndex === -1) return alert('Error: "Player" column not found.');
         
-        // This is a complex operation. We'll show a "loading" alert.
         alert('Importing players... This may take a moment as we set up all event presets.');
         console.log(`Importing... will create default assignments for ${allEventIds.length} events.`);
 
         const batch = db.batch();
         let playersAdded = 0;
 
-        // Create a default assignment map that every new player will get
         const defaultAssignments = {};
         allEventIds.forEach(eventId => {
             defaultAssignments[eventId] = { team: 'unassigned', role: 'member' };
         });
 
-        // Loop through all data rows (skipping header)
         for (let i = 1; i < rows.length; i++) {
             if (rows[i]) {
                 const rowData = rows[i].split(',');
@@ -126,17 +137,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (cleanedName) {
                             const playerDocId = cleanedName.replace(/\//g, '_');
                             const playerRef = db.collection('roster').doc(playerDocId);
-
-                            // Set player data. We use { merge: true }
-                            // This adds the 'name' and 'availability' fields
-                            // AND merges the 'defaultAssignments' with any
-                            // 'assignments' map that might already exist.
                             batch.set(playerRef, {
                                 name: cleanedName,
                                 availability: 'Unknown',
                                 assignments: defaultAssignments
-                            }, { merge: true }); // Merge is critical
-                            
+                            }, { merge: true });
                             playersAdded++;
                         }
                     }
@@ -149,14 +154,14 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await batch.commit();
             alert(`Successfully imported and processed ${playersAdded} players for all events!`);
-            loadData(); // Reload the UI
+            loadData();
         } catch (error) {
             console.error('FIREBASE IMPORT ERROR: ', error);
             alert('An error occurred during import. Check console.');
         }
     }
 
-    // --- NEW: CSV Export Function (Event-Aware) ---
+    // --- CSV Export Function ---
     async function exportRosterToCSV() {
         if (!activeEventId) return alert("No event selected.");
         
@@ -165,13 +170,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const rosterSnapshot = await db.collection('roster').orderBy('name').get();
             if (rosterSnapshot.empty) return alert('Roster is empty.');
             
-            // Get the name of the current event
             const eventDoc = await db.collection('events').doc(activeEventId).get();
             const eventName = eventDoc.exists ? eventDoc.data().name : activeEventId;
             
             let csvContent = `Name,Availability,Team,Role (Event: ${eventName})\n`;
             
-            // We need to fetch all teams for *this event* to match IDs to names
             const teamsSnapshot = await db.collection('teams').where('eventId', '==', activeEventId).get();
             const teamNameMap = new Map();
             teamsSnapshot.forEach(doc => {
@@ -180,15 +183,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             rosterSnapshot.forEach(doc => {
                 const player = doc.data();
-                
-                // Get the assignment for the *active event*
                 const assignment = player.assignments ? player.assignments[activeEventId] : null;
-                
                 const teamId = assignment ? assignment.team : 'unassigned';
                 const role = assignment ? assignment.role : 'member';
-                
-                const teamName = teamNameMap.get(teamId) || teamId; // Use name if we have it
-                
+                const teamName = teamNameMap.get(teamId) || teamId;
                 csvContent += `"${player.name}","${player.availability}","${teamName}","${role}"\n`;
             });
             
@@ -204,7 +202,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { console.error('FIREBASE EXPORT ERROR: ', error); }
     }
     
-    // --- NEW: Event Selector Loader ---
+    // --- Event Selector Loader ---
     async function loadEventSelector() {
         try {
             const eventsSnapshot = await db.collection('events').get();
@@ -214,7 +212,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             eventSelector.innerHTML = '';
-            allEventIds = []; // Clear the global list
+            allEventIds = [];
             
             eventsSnapshot.forEach((doc, index) => {
                 const event = doc.data();
@@ -222,9 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 option.value = doc.id;
                 option.textContent = event.name;
                 eventSelector.appendChild(option);
-                
-                allEventIds.push(doc.id); // Add to our global list
-                
+                allEventIds.push(doc.id);
                 if (index === 0) {
                     activeEventId = doc.id;
                     eventSelector.value = doc.id;
@@ -232,16 +228,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             console.log(`Found ${allEventIds.length} events. Defaulting to ${activeEventId}.`);
-            // Now that we have an active event, load the main data
             loadData();
-
         } catch (error) {
             console.error("Error loading events: ", error);
             eventSelector.innerHTML = '<option value="">Error loading</option>';
         }
     }
     
-    // --- NEW: Data Loading Function (The "Big Rewrite" version) ---
+    // --- Data Loading Function ---
     async function loadData() {
         if (!activeEventId) {
             console.log("loadData called, but no active event. Waiting for selector.");
@@ -259,15 +253,11 @@ document.addEventListener('DOMContentLoaded', () => {
         let totalCount = 0;
 
         try {
-            // 1. Load all teams for THIS EVENT
             const teamsSnapshot = await db.collection('teams').where('eventId', '==', activeEventId).get();
-            
-            // 2. Load all players
             const rosterSnapshot = await db.collection('roster').get();
             
             totalCount = rosterSnapshot.size;
             
-            // 3. Map players to their *current event* assignment
             const playersByTeam = new Map();
             playersByTeam.set('unassigned', []);
             
@@ -275,15 +265,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const player = doc.data();
                 player.id = doc.id;
                 
-                // Get the assignment for the *active event*
-                // Fallback to default if 'assignments' map or eventId doesn't exist
                 const defaultAssignment = { team: 'unassigned', role: 'member' };
                 const assignment = (player.assignments && player.assignments[activeEventId]) 
                                     ? player.assignments[activeEventId] 
                                     : defaultAssignment;
                 
                 const teamId = assignment.team || 'unassigned';
-                player.role = assignment.role || 'member'; // Set role for sorting
+                player.role = assignment.role || 'member';
                 
                 if (!playersByTeam.has(teamId)) {
                     playersByTeam.set(teamId, []);
@@ -295,13 +283,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            // 4. Render unassigned players
             mainRosterList.innerHTML = '';
             playersByTeam.get('unassigned').sort(sortPlayers).forEach(player => {
                 mainRosterList.appendChild(createPlayerLi(player));
             });
 
-            // 5. Render all teams for this event
             teamsSnapshot.forEach(teamDoc => {
                 const teamData = teamDoc.data();
                 teamData.id = teamDoc.id;
@@ -309,20 +295,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderTeam(teamData, teamPlayers);
             });
 
-            // 6. Update heading
             rosterHeading.textContent = `My Roster (${assignedCount} / ${totalCount})`;
             console.log("Data loading and rendering complete.");
             
-            // 7. Re-initialize drag-and-drop
             initializeSortable();
-
         } catch (error) {
             console.error("Error loading all data: ", error);
             mainRosterList.innerHTML = '<li>Error loading roster. Check Rules.</li>';
         }
     }
 
-    // --- createPlayerLi (Unchanged from last version) ---
+    // --- createPlayerLi ---
     function createPlayerLi(player) {
         const li = document.createElement('li');
         li.className = 'player-li';
@@ -345,7 +328,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return li;
     }
 
-    // --- sortPlayers (Unchanged from last version) ---
+    // --- sortPlayers ---
     function sortPlayers(a, b) {
         const roleOrder = { 'group_leader': 1, 'rally_leader': 2, 'member': 3 };
         const roleA = roleOrder[a.role || 'member'];
@@ -354,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return a.name.localeCompare(b.name);
     }
 
-    // --- renderTeam (Unchanged from last version) ---
+    // --- renderTeam ---
     function renderTeam(teamData, teamPlayers) {
         const teamContainer = document.createElement('div');
         teamContainer.className = 'team-container';
@@ -372,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
             description.style.height = (description.scrollHeight) + 'px';
         });
         description.addEventListener('blur', () => updateTeamData(teamData.id, { description: description.value }));
-        setTimeout(() => description.dispatchEvent(new Event('input')), 0);
+        setTimeout(() => description.dispatchEvent(new Event('input')), 0); 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-team-btn';
         deleteBtn.textContent = 'X';
@@ -390,20 +373,17 @@ document.addEventListener('DOMContentLoaded', () => {
         teamGrid.appendChild(teamContainer);
     }
 
-    // --- NEW: updatePlayerRole (Event-Aware) ---
+    // --- updatePlayerRole ---
     function updatePlayerRole(playerId, newRole) {
         if (!activeEventId) return;
         console.log(`Setting player ${playerId} to role ${newRole} for event ${activeEventId}`);
-        
-        // Use dot notation to update a field inside a map
         const updatePath = `assignments.${activeEventId}.role`;
-        
         db.collection('roster').doc(playerId).update({
             [updatePath]: newRole
         })
         .then(() => {
             console.log("Role updated!");
-            loadData(); // Reload to show the change
+            loadData();
         })
         .catch(error => {
             console.error("Error updating role: ", error);
@@ -411,33 +391,28 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // --- NEW: addNewTeam (Event-Aware) ---
+    // --- addNewTeam ---
     function addNewTeam() {
         if (!activeEventId) return;
         console.log(`Adding new team for event ${activeEventId}`);
         db.collection('teams').add({
             name: "New Team",
             description: "",
-            eventId: activeEventId // Link team to the current event
+            eventId: activeEventId
         })
         .then(() => loadData())
         .catch(error => console.error("Error adding team: ", error));
     }
     
-    // --- NEW: deleteTeam (Event-Aware) ---
+    // --- deleteTeam ---
     async function deleteTeam(teamId, teamName) {
         if (!activeEventId) return;
         if (!confirm(`Are you sure you want to delete "${teamName}"? This will only remove it from the ${activeEventId} event.`)) return;
-        
         try {
             console.log(`Deleting team ${teamId}...`);
-            // 1. Find all players assigned to this team *for this event*
             const playersQuery = db.collection('roster').where(`assignments.${activeEventId}.team`, '==', teamId);
             const playersSnapshot = await playersQuery.get();
-            
             const batch = db.batch();
-            
-            // 2. Set those players to unassigned *for this event*
             const updatePathTeam = `assignments.${activeEventId}.team`;
             const updatePathRole = `assignments.${activeEventId}.role`;
             playersSnapshot.forEach(doc => {
@@ -446,83 +421,68 @@ document.addEventListener('DOMContentLoaded', () => {
                     [updatePathRole]: 'member'
                 });
             });
-            
-            // 3. Delete the team document
             const teamRef = db.collection('teams').doc(teamId);
             batch.delete(teamRef);
-            
             await batch.commit();
             loadData();
         } catch (error) { console.error("Error deleting team: ", error); }
     }
     
-    // --- updateTeamData (Unchanged) ---
+    // --- updateTeamData ---
     function updateTeamData(teamId, dataToUpdate) {
         db.collection('teams').doc(teamId).update(dataToUpdate)
             .then(() => console.log(`Team ${teamId} updated`))
             .catch(error => console.error("Error updating team: ", error));
     }
 
-    // --- NEW: clearAllTeams (Event-Aware) ---
+    // --- clearAllTeams ---
     async function clearAllTeams() {
         if (!activeEventId) return;
         if (!confirm(`Are you sure you want to clear all teams for ${activeEventId}? All players in this event will be moved to the roster and roles reset.`)) return;
-        
         console.log(`Clearing all teams for ${activeEventId}...`);
         try {
-            // 1. Find all players assigned to a team *for this event*
             const playersQuery = db.collection('roster').where(`assignments.${activeEventId}.team`, '!=', 'unassigned');
             const playersSnapshot = await playersQuery.get();
-            
             if (playersSnapshot.empty) {
                 alert("All players are already unassigned for this event.");
                 return;
             }
-            
             const batch = db.batch();
             const updatePathTeam = `assignments.${activeEventId}.team`;
             const updatePathRole = `assignments.${activeEventId}.role`;
-
-            // 2. Set them to unassigned *for this event*
             playersSnapshot.forEach(doc => {
                 batch.update(doc.ref, {
                     [updatePathTeam]: 'unassigned',
                     [updatePathRole]: 'member'
                 });
             });
-            
             await batch.commit();
             console.log(`Moved ${playersSnapshot.size} players to unassigned for ${activeEventId}.`);
             loadData();
         } catch (error) { console.error("Error clearing teams: ", error); }
     }
 
-    // --- NEW: initializeSortable (Event-Aware) ---
+    // --- initializeSortable ---
     function initializeSortable() {
         if (!activeEventId) return;
-        
         const lists = document.querySelectorAll('.roster-list-group');
         lists.forEach(list => {
             const sortable = new Sortable(list, {
                 group: 'roster-group',
                 animation: 150,
                 ghostClass: 'sortable-ghost',
-                
                 onEnd: function (evt) {
                     const playerId = evt.item.dataset.id;
                     const newTeamListId = evt.to.id;
                     const newTeam = (newTeamListId === 'roster-list') ? 'unassigned' : newTeamListId;
-                    
                     console.log(`Moving player ${playerId} to team ${newTeam} for event ${activeEventId}`);
-                    
-                    // Use dot notation to update the team field for the *active event*
                     const updatePath = `assignments.${activeEventId}.team`;
                     db.collection('roster').doc(playerId).update({
                         [updatePath]: newTeam
                     })
                     .then(() => {
                         console.log("Player team updated successfully.");
-                        loadData(); // Full reload to update sorting and counts
+                        loadData();
                     })
                     .catch(error => {
                         console.error("Error updating player team: ", error);
