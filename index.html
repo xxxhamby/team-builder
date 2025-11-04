@@ -10,6 +10,8 @@
 <body>
 
     <header>
+        <span id="help-button" class="btn">?</span>
+        
         <h1>Roster & Team Manager</h1>
         <div class="event-selector-container">
             <label for="event-selector">Current Event:</label>
@@ -22,6 +24,14 @@
     <main>
         <div class="container" id="roster-container">
             <h2 id="roster-heading">My Roster (0 / 0)</h2>
+            
+            <div class="instructions-box">
+                <h3>Quick Start</h3>
+                <ol>
+                    <li>Generate your `test.csv` file from the Alliance Stats website.</li>
+                    <li>Click "Select CSV File" below, choose your file, then click "Import".</li>
+                </ol>
+            </div>
             
             <div class="io-section">
                 <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
@@ -54,6 +64,40 @@
         <div class="context-menu-item" id="set-role-group_leader">👑 Group Leader</div>
         <div class="context-menu-item" id="set-role-rally_leader">⚔️ Rally Leader</div>
         <div class="context-menu-item" id="set-role-member">👤 Member</div>
+    </div>
+
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <span id="modal-close-btn" class="modal-close-btn">&times;</span>
+            <h2>Help & Features Guide</h2>
+            
+            <h3>Events</h3>
+            <p>Use the "Current Event" dropdown to switch between event presets (e.g., "Castle Battle"). All your teams and player roles are saved separately for each event.</p>
+            
+            <h3>Importing</h3>
+            <p>Use the "Quick Start" steps to import your roster from a CSV. This will add all players to the "My Roster" list for all events, ready to be assigned.</p>
+            
+            <h3>Managing Teams</h3>
+            <ul>
+                <li><strong>Add Team:</strong> Click the <strong>+</strong> button to create a new, empty team for the current event.</li>
+                <li><strong>Edit Title:</strong> Click any team's title ("New Team") to rename it. Click away to save.</li>
+                <li><strong>Edit Description:</strong> Click the large text area to add notes. It saves when you click away.</li>
+                <li><strong>Delete Team:</strong> Click the red <strong>X</strong> on a team to delete it for this event. All players will be safely moved back to "My Roster".</li>
+            </ul>
+            
+            <h3>Managing Players</h3>
+            <ul>
+                <li><strong>Move Player:</strong> <strong>Click and drag</strong> any player from the roster to a team, between teams, or back to the roster.</li>
+                <li><strong>Set Role:</strong> <strong>Right-click</strong> a player's name to open the role menu. You can set them as a "Group Leader", "Rally Leader", or "Member".</li>
+                <li><strong>Pinning:</strong> Leaders and Rally Leaders are automatically "pinned" to the top of their team list.</li>
+            </ul>
+
+            <h3>Utilities</h3>
+            <ul>
+                <li><strong>Clear All Teams:</strong> This red button will move *all* players for the *current event* back to "My Roster" and reset their roles to "Member".</li>
+                <li><strong>Export Roster:</strong> This downloads a CSV file of all players, showing their assigned team and role *for the current event only*.</li>
+            </ul>
+        </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
