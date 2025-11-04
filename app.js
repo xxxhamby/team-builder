@@ -14,8 +14,10 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 let sortableInstances = [];
-// NEW: Variable to track which player was clicked
 let currentlyClickedPlayerId = null;
+
+// NEW: Global variable to track the active event
+let activeEventId = null; 
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log("DOM fully loaded and parsed.");
@@ -31,12 +33,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainRosterList = document.getElementById('roster-list');
     const addTeamButton = document.getElementById('add-team-button');
     const teamGrid = document.getElementById('team-grid-dynamic');
-    
-    // NEW: Get context menu and its buttons
     const contextMenu = document.getElementById('context-menu');
     const setRoleGroupLeader = document.getElementById('set-role-group_leader');
     const setRoleRallyLeader = document.getElementById('set-role-rally_leader');
     const setRoleMember = document.getElementById('set-role-member');
+    
+    // NEW: Get event selector
+    const eventSelector = document.getElementById('event-selector');
 
     let chosenFile = null;
 
@@ -56,33 +59,32 @@ document.addEventListener('DOMContentLoaded', () => {
     addTeamButton.addEventListener('click', addNewTeam);
     clearTeamsButton.addEventListener('click', clearAllTeams);
 
-    // --- NEW: Context Menu Listeners ---
-    
-    // Function to show the context menu
-    const showContextMenu = (event) => {
-        event.preventDefault(); // Stop browser right-click menu
-        
-        const li = event.target.closest('.player-li');
-        if (!li) return; // Didn't click on a player
+    // NEW: Event selector listener
+    eventSelector.addEventListener('change', () => {
+        activeEventId = eventSelector.value;
+        console.log(`Active event changed to: ${activeEventId}`);
+        // We will make loadData() work in the next step
+        // For now, it will just select the event
+        alert(`Event changed to: ${activeEventId}. We will enable loading this data in our next step!`);
+        // loadData(); // This will be enabled in our next step
+    });
 
-        currentlyClickedPlayerId = li.dataset.id; // Store which player we clicked
-        
+    // --- Context Menu Listeners ---
+    const showContextMenu = (event) => {
+        event.preventDefault();
+        const li = event.target.closest('.player-li');
+        if (!li) return;
+        currentlyClickedPlayerId = li.dataset.id;
         contextMenu.style.display = 'block';
         contextMenu.style.left = `${event.pageX}px`;
         contextMenu.style.top = `${event.pageY}px`;
     };
-    
-    // Add right-click listener to both list areas
     mainRosterList.addEventListener('contextmenu', showContextMenu);
     teamGrid.addEventListener('contextmenu', showContextMenu);
-    
-    // Hide context menu when clicking anywhere else
     document.addEventListener('click', () => {
         contextMenu.style.display = 'none';
         currentlyClickedPlayerId = null;
     });
-
-    // Listeners for the menu buttons
     setRoleGroupLeader.addEventListener('click', () => {
         if (currentlyClickedPlayerId) updatePlayerRole(currentlyClickedPlayerId, 'group_leader');
     });
@@ -94,8 +96,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- CSV Parsing Function ---
+    // NOTE: This will be heavily modified in our next step.
+    // For now, it still adds to the *old* structure.
     function parseAndUpload(csvData) {
-        // (Unchanged, but now adds 'role: member' by default)
         const rows = csvData.split('\n').map(row => row.trim());
         if (rows.length < 2) return alert('CSV file is empty.');
         const headerRow = rows[0].split(',').map(h => h.trim().replace(/"/g, ''));
@@ -114,12 +117,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (cleanedName) {
                             const playerDocId = cleanedName.replace(/\//g, '_');
                             const playerRef = db.collection('roster').doc(playerDocId);
+                            // THIS WILL BE REPLACED
                             batch.set(playerRef, {
                                 name: cleanedName,
                                 availability: 'Unknown',
-                                team: 'unassigned',
-                                role: 'member' // Default role
-                            });
+                                // We are setting the *old* fields for now
+                                team: 'unassigned', 
+                                role: 'member'
+                                // In our next step, we will add the 'assignments' map
+                            }, { merge: true }); // Merge to avoid deleting 'assignments'
                             playersAdded++;
                         }
                     }
@@ -134,135 +140,110 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- CSV Export Function ---
+    // This function will also be updated next.
     async function exportRosterToCSV() {
-        try {
-            const querySnapshot = await db.collection('roster').orderBy('name').get();
-            if (querySnapshot.empty) return alert('Roster is empty.');
-            
-            // UPDATED: Export includes new role name
-            let csvContent = "Name,Availability,Team,Role\n";
-            querySnapshot.forEach(doc => {
-                const player = doc.data();
-                csvContent += `"${player.name}","${player.availability}","${player.team || 'unassigned'}","${player.role || 'member'}"\n`;
-            });
-            
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', 'roster_export_full.csv');
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        } catch (error) { console.error('FIREBASE EXPORT ERROR: ', error); }
+        alert("This function will be updated to export for the *current event* in our next step!");
     }
     
-    // --- Data Loading and Rendering ---
+    // --- Data Loading ---
+    
+    // NEW: Function to load the event list into the dropdown
+    async function loadEventSelector() {
+        try {
+            const eventsSnapshot = await db.collection('events').get();
+            if (eventsSnapshot.empty) {
+                eventSelector.innerHTML = '<option value="">No events found</option>';
+                return;
+            }
+            
+            eventSelector.innerHTML = ''; // Clear "Loading..."
+            
+            eventsSnapshot.forEach((doc, index) => {
+                const event = doc.data();
+                const option = document.createElement('option');
+                option.value = doc.id; // e.g., "castle_battle"
+                option.textContent = event.name; // e.g., "Castle Battle"
+                eventSelector.appendChild(option);
+                
+                // Set the first event as the active one
+                if (index === 0) {
+                    activeEventId = doc.id;
+                    eventSelector.value = doc.id;
+                }
+            });
+            
+            // Now that we have an active event, load the main data
+            // We will build this new loadData() next
+            loadData();
+
+        } catch (error) {
+            console.error("Error loading events: ", error);
+            eventSelector.innerHTML = '<option value="">Error loading</option>';
+        }
+    }
+    
+    // This is our OLD function. It will be replaced.
     async function loadData() {
-        console.log("Loading data...");
+        console.log(`Loading data for event: ${activeEventId}... (This part will be built next)`);
+        
+        // This is a placeholder to show the old data for now
+        // This will all be rewritten
+        console.log("Loading placeholder data...");
         sortableInstances.forEach(instance => instance.destroy());
         sortableInstances = [];
-        
         mainRosterList.innerHTML = '<li>Loading...</li>';
         teamGrid.innerHTML = '';
         
-        let assignedCount = 0;
-        let totalCount = 0;
-
-        try {
-            const teamsSnapshot = await db.collection('teams').get();
-            const rosterSnapshot = await db.collection('roster').get();
-            totalCount = rosterSnapshot.size;
-            
-            const playersByTeam = new Map();
-            playersByTeam.set('unassigned', []);
-            
-            rosterSnapshot.forEach(doc => {
-                const player = doc.data();
-                player.id = doc.id;
-                const teamId = player.team || 'unassigned';
-                
-                if (!playersByTeam.has(teamId)) playersByTeam.set(teamId, []);
-                playersByTeam.get(teamId).push(player);
-                if (teamId !== 'unassigned') assignedCount++;
-            });
-
-            mainRosterList.innerHTML = '';
-            playersByTeam.get('unassigned').sort((a,b) => a.name.localeCompare(b.name)).forEach(player => {
-                mainRosterList.appendChild(createPlayerLi(player));
-            });
-
-            teamsSnapshot.forEach(teamDoc => {
-                const teamData = teamDoc.data();
-                teamData.id = teamDoc.id;
-                const teamPlayers = playersByTeam.get(teamData.id) || [];
-                renderTeam(teamData, teamPlayers);
-            });
-
-            rosterHeading.textContent = `My Roster (${assignedCount} / ${totalCount})`;
-            console.log("Data loading complete.");
-            
-            initializeSortable();
-
-        } catch (error) { console.error("Error loading all data: ", error); }
+        // For now, just show a message.
+        mainRosterList.innerHTML = '<li>This app is being upgraded.</li>';
+        teamGrid.innerHTML = '<p style="color: #aaa; text-align: center;">Please wait for the next step to load event data.</p>';
+        rosterHeading.textContent = `My Roster (0 / 0)`;
+        
+        // --- THIS IS A PREVIEW of the old functions ---
+        // We are keeping them here, but they won't run until we
+        // call loadData() properly in the next step.
     }
 
-    /**
-     * UPDATED: Creates player <li> with new role name
-     */
+    // --- OLD Functions (To be updated) ---
+
     function createPlayerLi(player) {
         const li = document.createElement('li');
         li.className = 'player-li';
         li.dataset.id = player.id;
-        
         const icon = document.createElement('span');
         icon.className = 'player-icon';
-        
         const role = player.role || 'member';
-        
-        if (role === 'group_leader') { // UPDATED
+        if (role === 'group_leader') {
             li.classList.add('role-group_leader');
             icon.textContent = '👑';
-        } else if (role === 'rally_leader') { // UPDATED
+        } else if (role === 'rally_leader') {
             li.classList.add('role-rally_leader');
             icon.textContent = '⚔️';
         } else {
             li.classList.add('role-member');
         }
-        
         const name = document.createTextNode(` ${player.name}`);
         li.appendChild(icon);
         li.appendChild(name);
         return li;
     }
 
-    /**
-     * UPDATED: Sorts players by new role name
-     */
     function sortPlayers(a, b) {
-        const roleOrder = { 'group_leader': 1, 'rally_leader': 2, 'member': 3 }; // UPDATED
-        
+        const roleOrder = { 'group_leader': 1, 'rally_leader': 2, 'member': 3 };
         const roleA = roleOrder[a.role || 'member'];
         const roleB = roleOrder[b.role || 'member'];
-
         if (roleA !== roleB) return roleA - roleB;
         return a.name.localeCompare(b.name);
     }
 
-    /**
-     * Renders team. Note: Role change listener is REMOVED from here.
-     */
     function renderTeam(teamData, teamPlayers) {
         const teamContainer = document.createElement('div');
         teamContainer.className = 'team-container';
         teamContainer.dataset.teamId = teamData.id; 
-
         const title = document.createElement('h3');
         title.setAttribute('contenteditable', 'true');
         title.textContent = teamData.name || 'New Team';
         title.addEventListener('blur', () => updateTeamData(teamData.id, { name: title.textContent }));
-
         const description = document.createElement('textarea');
         description.className = 'team-description';
         description.placeholder = 'Add description...';
@@ -273,121 +254,51 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         description.addEventListener('blur', () => updateTeamData(teamData.id, { description: description.value }));
         setTimeout(() => description.dispatchEvent(new Event('input')), 0);
-        
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-team-btn';
         deleteBtn.textContent = 'X';
         deleteBtn.addEventListener('click', () => deleteTeam(teamData.id, teamData.name));
-
         const playerList = document.createElement('ul');
         playerList.className = 'roster-list-group';
         playerList.id = teamData.id;
-        
-        teamPlayers.sort(sortPlayers).forEach(player => { // Sorting is still here
+        teamPlayers.sort(sortPlayers).forEach(player => {
             playerList.appendChild(createPlayerLi(player));
         });
-        
-        // The click listener that used prompt() has been removed.
-
         teamContainer.appendChild(deleteBtn);
         teamContainer.appendChild(title);
         teamContainer.appendChild(description);
         teamContainer.appendChild(playerList);
-        
         teamGrid.appendChild(teamContainer);
     }
 
-    // --- NEW: Helper function to update a player's role ---
     function updatePlayerRole(playerId, newRole) {
-        console.log(`Setting player ${playerId} to role ${newRole}`);
-        db.collection('roster').doc(playerId).update({ role: newRole })
-            .then(() => {
-                console.log("Role updated!");
-                loadData(); // Reload to show the change
-            })
-            .catch(error => console.error("Error updating role: ", error));
+        console.log(`Setting player ${playerId} to role ${newRole} for event ${activeEventId}`);
+        alert(`This function will be updated in the next step to save to the correct event preset!`);
     }
     
-    // --- Team CRUD Functions ---
     function addNewTeam() {
-        db.collection('teams').add({ name: "New Team", description: "" })
-            .then(() => loadData())
-            .catch(error => console.error("Error adding team: ", error));
+        console.log(`Adding new team for event ${activeEventId}`);
+        alert(`This function will be updated in the next step to save to the correct event preset!`);
     }
     
     async function deleteTeam(teamId, teamName) {
-        if (!confirm(`Are you sure you want to delete "${teamName}"?`)) return;
-        try {
-            const playersQuery = db.collection('roster').where('team', '==', teamId);
-            const playersSnapshot = await playersQuery.get();
-            const batch = db.batch();
-            playersSnapshot.forEach(doc => {
-                batch.update(doc.ref, { team: 'unassigned', role: 'member' });
-            });
-            const teamRef = db.collection('teams').doc(teamId);
-            batch.delete(teamRef);
-            await batch.commit();
-            loadData();
-        } catch (error) { console.error("Error deleting team: ", error); }
+        alert(`This function will be updated in the next step!`);
     }
     
     function updateTeamData(teamId, dataToUpdate) {
-        db.collection('teams').doc(teamId).update(dataToUpdate)
-            .then(() => console.log(`Team ${teamId} updated`))
-            .catch(error => console.error("Error updating team: ", error));
+        alert(`This function will be updated in the next step!`);
     }
 
     async function clearAllTeams() {
-        if (!confirm('Are you sure you want to clear all teams? All players will be moved back to the main roster and roles will be reset.')) return;
-        
-        console.log("Clearing all teams and resetting roles...");
-        try {
-            const playersQuery = db.collection('roster').where('team', '!=', 'unassigned');
-            const playersSnapshot = await playersQuery.get();
-            if (playersSnapshot.empty) {
-                alert("All players are already unassigned.");
-                return;
-            }
-            const batch = db.batch();
-            playersSnapshot.forEach(doc => {
-                batch.update(doc.ref, { team: 'unassigned', role: 'member' });
-            });
-            await batch.commit();
-            console.log(`Moved ${playersSnapshot.size} players to unassigned.`);
-            loadData();
-        } catch (error) { console.error("Error clearing teams: ", error); }
+        alert(`This function will be updated in the next step to clear the current event!`);
     }
 
-    // --- Drag-and-Drop Initialization ---
     function initializeSortable() {
-        const lists = document.querySelectorAll('.roster-list-group');
-        lists.forEach(list => {
-            const sortable = new Sortable(list, {
-                group: 'roster-group',
-                animation: 150,
-                ghostClass: 'sortable-ghost',
-                onEnd: function (evt) {
-                    const playerId = evt.item.dataset.id;
-                    const newTeamListId = evt.to.id;
-                    const newTeam = (newTeamListId === 'roster-list') ? 'unassigned' : newTeamListId;
-                    
-                    console.log(`Moving player ${playerId} to team ${newTeam}`);
-                    db.collection('roster').doc(playerId).update({ team: newTeam })
-                        .then(() => {
-                            console.log("Player team updated successfully.");
-                            loadData();
-                        })
-                        .catch(error => {
-                            console.error("Error updating player team: ", error);
-                            loadData(); 
-                        });
-                }
-            });
-            sortableInstances.push(sortable);
-        });
-        console.log(`Initialized drag-and-drop on ${lists.length} lists.`);
+        console.log("Sortable will be re-initialized in the next step.");
     }
 
     // --- Initial Page Load ---
-    loadData();
+    // This is now the *only* function called on page load.
+    // It will load the events, set the first one, then call loadData().
+    loadEventSelector();
 });
