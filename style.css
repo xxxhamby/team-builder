@@ -145,36 +145,31 @@ h1, h2, h3 { margin-top: 0; color: #fff; }
     border-radius: 4px;
     padding: 5px;
 }
-
-/* NEW: Renamed from li to .player-li */
 .player-li {
     background-color: #555;
     color: #eee;
     padding: 10px;
     margin-bottom: 5px;
     border-radius: 4px;
-    cursor: grab; /* Drag-and-drop cursor */
+    cursor: grab;
     display: flex;
     align-items: center;
-    gap: 8px; /* Space between icon and name */
+    gap: 8px;
 }
 .player-li:hover {
     background-color: #666;
 }
 
-/* NEW: Role Styles */
-.role-leader {
-    background-color: #4a82c4; /* A slightly different blue */
+/* NEW: Renamed role-leader */
+.role-group_leader {
+    background-color: #4a82c4;
     font-weight: bold;
 }
-.role-rally {
-    background-color: #5f7a5f; /* A subtle green */
+.role-rally_leader {
+    background-color: #5f7a5f;
 }
-.role-member {
-    /* No special style */
-}
+.role-member { /* No special style */ }
 
-/* This is the icon shown *before* the name */
 .player-icon {
     font-size: 16px;
     line-height: 1;
@@ -183,4 +178,32 @@ h1, h2, h3 { margin-top: 0; color: #fff; }
 .sortable-ghost {
     opacity: 0.4;
     background: #4a90e2;
+}
+
+/* --- NEW: Context Menu Styles --- */
+.context-menu {
+    display: none; /* Hidden by default */
+    position: absolute;
+    background-color: #555;
+    border: 1px solid #888;
+    border-radius: 5px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    z-index: 1000;
+}
+.context-menu-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    color: #eee;
+}
+.context-menu-item:hover {
+    background-color: #4a90e2;
+    color: #fff;
+}
+.context-menu-item:first-child:hover {
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+.context-menu-item:last-child:hover {
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
 }
