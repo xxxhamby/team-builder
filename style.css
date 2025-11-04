@@ -22,6 +22,8 @@ main {
     padding: 1rem;
     flex-wrap: wrap; 
     gap: 1rem; 
+    /* Align containers to the top */
+    align-items: flex-start;
 }
 
 .container {
@@ -32,16 +34,29 @@ main {
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
-/* Make Roster container smaller */
 #roster-container {
     width: 30%;
     min-width: 300px;
 }
 
-/* Make Teams container larger */
 #teams-area {
     width: 65%;
     min-width: 400px;
+}
+
+/* NEW: Header for the Teams area */
+.teams-header {
+    display: flex;
+    justify-content: space-between; /* Puts title on left, button on right */
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+#add-team-button {
+    font-size: 24px;
+    font-weight: bold;
+    padding: 0px 12px;
+    line-height: 30px;
 }
 
 h1, h2, h3 {
@@ -80,27 +95,46 @@ h1, h2, h3 {
     margin-left: 5px;
 }
 
-/* --- NEW: Team Grid Layout --- */
-#team-grid {
+/* --- NEW: Dynamic Team Grid Layout --- */
+#team-grid-dynamic {
     display: flex;
-    flex-wrap: wrap; /* Allows teams to stack */
-    gap: 15px; /* Space between team boxes */
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
 .team-container {
-    background-color: #2a2a2a; /* Slightly darker */
+    position: relative; /* For the delete button */
+    background-color: #2a2a2a;
     border: 1px solid #444;
     border-radius: 5px;
     padding: 10px;
-    /* Each team box takes up ~30% width */
-    flex-basis: 30%; 
+    flex-basis: 48%; /* Two teams per row, with gap */
     flex-grow: 1;
-    min-width: 250px;
+    min-width: 300px;
 }
 
+/* NEW: Editable Title Style */
+.team-container h3[contenteditable="true"] {
+    padding: 5px;
+    border: 1px dashed transparent; /* Show border on hover */
+    border-radius: 4px;
+    cursor: text;
+}
+.team-container h3[contenteditable="true"]:hover {
+    border-color: #666;
+}
+.team-container h3[contenteditable="true"]:focus {
+    background-color: #444;
+    border-color: #4a90e2;
+    outline: none;
+}
+
+/* NEW: Auto-expanding Textarea */
 .team-description {
     width: 95%;
-    height: 60px;
+    /* Start as one line */
+    height: 2.2em; 
+    line-height: 1.5;
     background-color: #444;
     border: 1px solid #555;
     border-radius: 4px;
@@ -108,45 +142,58 @@ h1, h2, h3 {
     font-family: Arial, sans-serif;
     padding: 5px;
     margin-bottom: 10px;
+    /* This is key */
+    resize: none; 
+    overflow: hidden;
 }
 
-/* --- NEW: Roster List (shared style) --- */
+/* NEW: Delete Team Button */
+.delete-team-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #a04040;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-weight: bold;
+    line-height: 24px;
+    text-align: center;
+    cursor: pointer;
+    opacity: 0.5;
+}
+.team-container:hover .delete-team-btn {
+    opacity: 1;
+}
+.delete-team-btn:hover {
+    background: #c04040;
+}
+
+
+/* --- Roster List (shared style) --- */
 .roster-list-group {
     list-style-type: none;
     padding: 0;
     margin-top: 1rem;
     max-height: 400px;
     overflow-y: auto;
-    /* Set a minimum height so drop zones are active */
-    min-height: 100px; 
+    min-height: 50px; 
     background-color: #444;
     border-radius: 4px;
     padding: 5px;
 }
 
-/* Style for individual roster members */
 .roster-list-group li {
     background-color: #555;
     color: #eee;
     padding: 10px;
     margin-bottom: 5px;
     border-radius: 4px;
-    cursor: grab; /* Indicates item is draggable */
+    /* We'll add cursor: grab back in the next step */
 }
 
-/* --- NEW: Multi-select and Drag-and-Drop Styles --- */
 .roster-list-group li:hover {
     background-color: #666;
-}
-
-/* This is the style for a selected item */
-.roster-list-group li.selected {
-    background-color: #4a90e2;
-    color: #fff;
-}
-
-/* This is the "ghost" item being dragged */
-.sortable-ghost {
-    opacity: 0.4;
-    background: #6a6a6a;
 }
