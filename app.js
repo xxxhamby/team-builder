@@ -21,94 +21,128 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileInput = document.getElementById('csv-file-input');
     const importButton = document.getElementById('import-button');
     const exportButton = document.getElementById('export-button');
-    const rosterList = document.getElementById('roster-list');
     const fileNameDisplay = document.getElementById('file-name-display');
     const rosterHeading = document.getElementById('roster-heading');
-    // const teamsHeading = document.getElementById('teams-heading'); // Ready for later
+    
+    // NEW: Get references to all our lists
+    const rosterList = document.getElementById('roster-list');
+    const moveSelectedButton = document.getElementById('move-selected-button');
+    const teamLists = {
+        'team-1': document.getElementById('team-1'),
+        'team-2': document.getElementById('team-2'),
+        'team-3': document.getElementById('team-3'),
+        'team-4': document.getElementById('team-4'),
+        'team-5': document.getElementById('team-5'),
+        'team-6': document.getElementById('team-6')
+    };
 
     let chosenFile = null;
 
-    // Listen for when a file is chosen
+    // --- CSV Import / Export Listeners ---
     fileInput.addEventListener('change', (event) => {
         chosenFile = event.target.files[0];
-        if (chosenFile) {
-            console.log("File chosen:", chosenFile.name);
-            fileNameDisplay.textContent = chosenFile.name;
-        } else {
-            console.log("File selection cancelled.");
-            fileNameDisplay.textContent = 'No file chosen';
-        }
+        fileNameDisplay.textContent = chosenFile ? chosenFile.name : 'No file chosen';
     });
 
-    // Listen for click on the Import button
     importButton.addEventListener('click', () => {
-        console.log("Import button clicked.");
         if (!chosenFile) {
             alert('Please select a CSV file first.');
-            console.log("Import failed: No file chosen.");
             return;
         }
-        
         const reader = new FileReader();
-        reader.onload = function(event) {
-            const csvData = event.target.result;
-            console.log("File read successfully, now parsing...");
-            parseAndUpload(csvData);
-        };
-        reader.onerror = function() {
-            alert('Error reading file.');
-            console.error("FileReader error.");
-        };
+        reader.onload = (event) => parseAndUpload(event.target.result);
+        reader.onerror = () => alert('Error reading file.');
         reader.readAsText(chosenFile);
     });
 
-    // Listen for click on the Export button
     exportButton.addEventListener('click', exportRosterToCSV);
 
-    // --- Core Functions ---
-    function parseAndUpload(csvData) {
-        const rows = csvData.split('\n').map(row => row.trim());
-        if (rows.length < 2) {
-            alert('CSV file is empty or has no data rows.');
+    // --- NEW: Multi-Select Logic ---
+    rosterList.addEventListener('click', (event) => {
+        const li = event.target.closest('li');
+        if (!li) return; // Didn't click on a list item
+
+        // Check for Ctrl key (Windows) or Meta key (Mac)
+        if (event.ctrlKey || event.metaKey) {
+            // Toggle selection
+            li.classList.toggle('selected');
+        } else {
+            // Single select
+            // Clear all other selections first
+            document.querySelectorAll('#roster-list li.selected').forEach(item => {
+                item.classList.remove('selected');
+            });
+            li.classList.add('selected');
+        }
+        
+        // Show or hide the 'Move Selected' button
+        updateMoveButtonVisibility();
+    });
+
+    // NEW: Move Selected Button Listener
+    moveSelectedButton.addEventListener('click', () => {
+        const selectedItems = document.querySelectorAll('#roster-list li.selected');
+        if (selectedItems.length === 0) return;
+
+        const teamNumber = prompt('Move selected players to which team (1-6)?');
+        const teamId = `team-${teamNumber}`;
+
+        if (!teamLists[teamId]) {
+            alert('Invalid team number. Please enter a number from 1 to 6.');
             return;
         }
 
+        const batch = db.batch();
+        selectedItems.forEach(item => {
+            const playerId = item.dataset.id; // Get ID from data attribute
+            if (playerId) {
+                const playerRef = db.collection('roster').doc(playerId);
+                batch.update(playerRef, { team: teamId });
+            }
+        });
+
+        batch.commit()
+            .then(() => {
+                console.log('Batch move successful!');
+                loadRoster(); // Reload the entire UI
+                updateMoveButtonVisibility(); // Hide button
+            })
+            .catch(error => {
+                console.error('Error in batch move: ', error);
+            });
+    });
+
+    function updateMoveButtonVisibility() {
+        const selectedCount = document.querySelectorAll('#roster-list li.selected').length;
+        moveSelectedButton.style.display = selectedCount > 0 ? 'block' : 'none';
+        moveSelectedButton.textContent = `Move Selected (${selectedCount})`;
+    }
+
+    // --- CSV Parsing Function ---
+    function parseAndUpload(csvData) {
+        const rows = csvData.split('\n').map(row => row.trim());
+        if (rows.length < 2) return alert('CSV file is empty.');
+
         const headerRow = rows[0].split(',').map(h => h.trim().replace(/"/g, ''));
-        console.log("CSV Headers found:", headerRow);
-        
         const playerIndex = headerRow.indexOf('Player');
-        
-        if (playerIndex === -1) {
-            alert('Error: Could not find a "Player" column in the CSV file. Check capitalization.');
-            console.error("Parsing error: 'Player' column not found.");
-            return;
-        }
-        console.log("Found 'Player' column at index:", playerIndex);
+        if (playerIndex === -1) return alert('Error: "Player" column not found.');
 
         const batch = db.batch();
         let playersAdded = 0;
-
         for (let i = 1; i < rows.length; i++) {
-            if (rows[i]) { 
+            if (rows[i]) {
                 const rowData = rows[i].split(',');
                 if (rowData.length > playerIndex) {
                     const playerName = rowData[playerIndex];
                     if (playerName) {
                         const cleanedName = playerName.trim().replace(/"/g, '');
                         if (cleanedName) {
-                            
-                            // --- THIS IS THE FIX ---
-                            // Create a "safe" ID by replacing / with _
                             const playerDocId = cleanedName.replace(/\//g, '_');
-                            
-                            // Use the safe ID for the document reference
                             const playerRef = db.collection('roster').doc(playerDocId);
-                            // --- END OF FIX ---
-
                             batch.set(playerRef, {
-                                name: cleanedName, // Save the REAL name (with /)
+                                name: cleanedName,
                                 availability: 'Unknown',
-                                team: 'unassigned' 
+                                team: 'unassigned' // Default to unassigned
                             });
                             playersAdded++;
                         }
@@ -116,84 +150,94 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-
-        if (playersAdded === 0) {
-            alert('No valid player names were found in the file.');
-            console.log("Import complete, but 0 players were added.");
-            return;
-        }
-        
-        console.log(`Committing batch for ${playersAdded} players...`);
+        if (playersAdded === 0) return alert('No valid players found.');
 
         batch.commit()
             .then(() => {
                 alert(`Successfully imported ${playersAdded} players!`);
-                console.log("Batch commit successful!");
-                loadRoster(); // Reload the list
+                loadRoster();
                 fileNameDisplay.textContent = 'No file chosen';
-                fileInput.value = ''; 
+                fileInput.value = '';
                 chosenFile = null;
             })
             .catch(error => {
                 console.error('FIREBASE IMPORT ERROR: ', error);
-                alert('An error occurred while saving to the database. PLEASE CHECK FIREBASE RULES and browser console (F12) for details.');
+                alert('Error importing. Check console (F12) and Firebase Rules.');
             });
     }
 
-    /**
-     * Fetches all documents from the "roster" collection and displays them
-     */
+    // --- NEW: Main Roster Loading Function ---
     function loadRoster() {
         console.log("Loading roster from Firebase...");
+        
+        // Clear all lists before loading
         rosterList.innerHTML = '<li>Loading...</li>';
+        for (const list of Object.values(teamLists)) {
+            list.innerHTML = '';
+        }
 
         db.collection('roster').orderBy('name').get()
             .then(querySnapshot => {
-                rosterList.innerHTML = ''; 
+                rosterList.innerHTML = ''; // Clear "Loading..."
                 
                 let totalCount = querySnapshot.size;
                 let assignedCount = 0;
+                let teamCounts = {};
 
                 if (querySnapshot.empty) {
-                    rosterList.innerHTML = '<li>Roster is empty.</li>';
                     rosterHeading.textContent = 'My Roster (0 / 0)';
                     return;
                 }
 
                 querySnapshot.forEach(doc => {
                     const player = doc.data();
-                    
-                    if (player.team && player.team !== 'unassigned') {
-                        assignedCount++;
-                    }
+                    const playerId = doc.id; // The document ID (e.g., "chuina_portgasdace")
+                    const playerTeam = player.team || 'unassigned';
 
+                    // Create the list item
                     const li = document.createElement('li');
-                    li.textContent = player.name; // This will show "chuina/portgasdace"
-                    rosterList.appendChild(li);
+                    li.textContent = player.name;
+                    // NEW: Add the database ID to the element!
+                    // This is CRITICAL for drag-drop and multi-select.
+                    li.dataset.id = playerId;
+
+                    if (teamLists[playerTeam]) {
+                        // Player is on a team
+                        teamLists[playerTeam].appendChild(li);
+                        assignedCount++;
+                        // Add to team count
+                        teamCounts[playerTeam] = (teamCounts[playerTeam] || 0) + 1;
+                    } else {
+                        // Player is on the main roster
+                        rosterList.appendChild(li);
+                    }
                 });
 
+                // Update roster heading
                 rosterHeading.textContent = `My Roster (${assignedCount} / ${totalCount})`;
-                console.log("Roster loaded successfully.");
 
+                // Update all team headings
+                for (const teamId in teamLists) {
+                    const count = teamCounts[teamId] || 0;
+                    document.getElementById(`${teamId}-heading`).textContent = `Team ${teamId.split('-')[1]} (${count})`;
+                }
+                
+                console.log("Roster loaded successfully.");
             })
             .catch(error => {
                 console.error('FIREBASE LOAD ERROR: ', error);
-                rosterList.innerHTML = '<li>Error loading roster. Check Firebase Rules and console (F12).</li>';
+                rosterList.innerHTML = '<li>Error loading roster. Check Rules.</li>';
             });
     }
 
+    // --- CSV Export Function ---
     async function exportRosterToCSV() {
-        console.log("Export button clicked, fetching roster...");
+        console.log("Export button clicked...");
         try {
             const querySnapshot = await db.collection('roster').orderBy('name').get();
-            
-            if (querySnapshot.empty) {
-                alert('Roster is empty, nothing to export.');
-                return;
-            }
+            if (querySnapshot.empty) return alert('Roster is empty.');
 
-            let csvContent = "Name,Availability,Team\n"; 
-
+            let csvContent = "Name,Availability,Team\n";
             querySnapshot.forEach(doc => {
                 const player = doc.data();
                 csvContent += `"${player.name}","${player.availability}","${player.team || 'unassigned'}"\n`;
@@ -202,22 +246,64 @@ document.addEventListener('DOMContentLoaded', () => {
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
-            
             link.setAttribute('href', url);
             link.setAttribute('download', 'roster_export.csv');
             link.style.visibility = 'hidden';
-            
             document.body.appendChild(link);
-            link.click(); 
-            document.body.removeChild(link); 
+            link.click();
+            document.body.removeChild(link);
             console.log("Export successful.");
-
         } catch (error) {
             console.error('FIREBASE EXPORT ERROR: ', error);
-            alert('An error occurred while exporting. Check console (F12).');
         }
+    }
+    
+    // --- NEW: Drag-and-Drop Initialization ---
+    function initializeSortable() {
+        const allLists = [rosterList, ...Object.values(teamLists)];
+        
+        allLists.forEach(listEl => {
+            new Sortable(listEl, {
+                group: 'roster-group', // All lists are part of the same group
+                animation: 150,
+                ghostClass: 'sortable-ghost', // The faded-out item
+                
+                // This event fires when you drop an item
+                onEnd: function (evt) {
+                    const itemEl = evt.item; // The <li> element that was moved
+                    const newTeamId = evt.to.id; // The ID of the list it was dropped in
+                    const playerId = itemEl.dataset.id; // The player's DB ID
+
+                    if (!playerId) {
+                        console.error('Error: Moved item has no player ID.');
+                        return;
+                    }
+                    
+                    // Determine new team status
+                    const newTeam = (newTeamId === 'roster-list') ? 'unassigned' : newTeamId;
+
+                    console.log(`Moving player ${playerId} to team ${newTeam}`);
+
+                    // Update this one player in Firebase
+                    db.collection('roster').doc(playerId).update({
+                        team: newTeam
+                    })
+                    .then(() => {
+                        console.log('Player team updated in Firebase.');
+                        // Reload the counts on all headings
+                        loadRoster(); 
+                    })
+                    .catch(error => {
+                        console.error('Error updating player team: ', error);
+                        // If it fails, reload anyway to put it back
+                        loadRoster();
+                    });
+                }
+            });
+        });
     }
 
     // --- Initial Page Load ---
-    loadRoster(); 
+    loadRoster(); // Load the roster from DB
+    initializeSortable(); // Activate drag-and-drop
 });
