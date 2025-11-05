@@ -11,7 +11,6 @@
 
     <header>
         <span id="help-button" class="btn">?</span>
-        
         <h1>Roster & Team Manager</h1>
         <div class="event-selector-container">
             <label for="event-selector">Current Event:</label>
@@ -21,14 +20,18 @@
         </div>
     </header>
 
-    <main>
+    <div id="loading-container">
+        <h2>Loading Roster Data...</h2>
+    </div>
+
+    <main id="main-content" style="display: none;">
         <div class="container" id="roster-container">
             <h2 id="roster-heading">My Roster (0 / 0)</h2>
             
             <div class="instructions-box">
                 <h3>Quick Start</h3>
                 <ol>
-                    <li>Generate your `test.csv` file from the Alliance Stats website.</li>
+                    <li>Generate your `roster.csv` file from the Alliance Stats website.</li>
                     <li>Click "Select CSV File" below, choose your file, then click "Import".</li>
                 </ol>
             </div>
@@ -64,6 +67,7 @@
         <div class="context-menu-item" id="set-role-group_leader">👑 Group Leader</div>
         <div class="context-menu-item" id="set-role-rally_leader">⚔️ Rally Leader</div>
         <div class="context-menu-item" id="set-role-member">👤 Member</div>
+        <div class="context-menu-item danger-item" id="delete-player">🔥 Delete Player</div>
     </div>
 
     <div id="modal-overlay" class="modal-overlay">
@@ -89,6 +93,7 @@
             <ul>
                 <li><strong>Move Player:</strong> <strong>Click and drag</strong> any player from the roster to a team, between teams, or back to the roster.</li>
                 <li><strong>Set Role:</strong> <strong>Right-click</strong> a player's name to open the role menu. You can set them as a "Group Leader", "Rally Leader", or "Member".</li>
+                <li><strong>Delete Player:</strong> <strong>Right-click</strong> a player and select "Delete Player" to permanently remove them from the roster. <strong>This cannot be undone.</strong></li>
                 <li><strong>Pinning:</strong> Leaders and Rally Leaders are automatically "pinned" to the top of their team list.</li>
             </ul>
 
