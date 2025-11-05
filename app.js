@@ -38,10 +38,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const setRoleMember = document.getElementById('set-role-member');
     const eventSelector = document.getElementById('event-selector');
     
-    // NEW: Get Modal elements
+    // NEW: Modal and Loading elements
     const helpButton = document.getElementById('help-button');
     const modalOverlay = document.getElementById('modal-overlay');
     const modalCloseBtn = document.getElementById('modal-close-btn');
+    const loadingContainer = document.getElementById('loading-container');
+    const mainContent = document.getElementById('main-content');
+    const deletePlayerButton = document.getElementById('delete-player'); // NEW
 
     let chosenFile = null;
 
@@ -67,14 +70,13 @@ document.addEventListener('DOMContentLoaded', () => {
         loadData();
     });
 
-    // --- NEW: Modal Listeners ---
+    // --- Modal Listeners ---
     helpButton.addEventListener('click', () => {
         modalOverlay.style.display = 'flex';
     });
     modalCloseBtn.addEventListener('click', () => {
         modalOverlay.style.display = 'none';
     });
-    // Also close modal by clicking on the background
     modalOverlay.addEventListener('click', (event) => {
         if (event.target === modalOverlay) {
             modalOverlay.style.display = 'none';
@@ -106,27 +108,27 @@ document.addEventListener('DOMContentLoaded', () => {
     setRoleMember.addEventListener('click', () => {
         if (currentlyClickedPlayerId) updatePlayerRole(currentlyClickedPlayerId, 'member');
     });
+    // NEW: Delete Player listener
+    deletePlayerButton.addEventListener('click', () => {
+        if (currentlyClickedPlayerId) deletePlayer(currentlyClickedPlayerId);
+    });
+
 
     // --- CSV Parsing Function ---
     async function parseAndUpload(csvData) {
+        // (This function is unchanged from the last working version)
         const rows = csvData.split('\n').map(row => row.trim());
         if (rows.length < 2) return alert('CSV file is empty.');
-        
         const headerRow = rows[0].split(',').map(h => h.trim().replace(/"/g, ''));
         const playerIndex = headerRow.indexOf('Player');
         if (playerIndex === -1) return alert('Error: "Player" column not found.');
-        
         alert('Importing players... This may take a moment as we set up all event presets.');
-        console.log(`Importing... will create default assignments for ${allEventIds.length} events.`);
-
         const batch = db.batch();
         let playersAdded = 0;
-
         const defaultAssignments = {};
         allEventIds.forEach(eventId => {
             defaultAssignments[eventId] = { team: 'unassigned', role: 'member' };
         });
-
         for (let i = 1; i < rows.length; i++) {
             if (rows[i]) {
                 const rowData = rows[i].split(',');
@@ -148,9 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-        
         if (playersAdded === 0) return alert('No valid players found.');
-        
         try {
             await batch.commit();
             alert(`Successfully imported and processed ${playersAdded} players for all events!`);
@@ -163,24 +163,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- CSV Export Function ---
     async function exportRosterToCSV() {
+        // (This function is unchanged from the last working version)
         if (!activeEventId) return alert("No event selected.");
-        
         console.log(`Exporting roster for event: ${activeEventId}`);
         try {
             const rosterSnapshot = await db.collection('roster').orderBy('name').get();
             if (rosterSnapshot.empty) return alert('Roster is empty.');
-            
             const eventDoc = await db.collection('events').doc(activeEventId).get();
             const eventName = eventDoc.exists ? eventDoc.data().name : activeEventId;
-            
             let csvContent = `Name,Availability,Team,Role (Event: ${eventName})\n`;
-            
             const teamsSnapshot = await db.collection('teams').where('eventId', '==', activeEventId).get();
             const teamNameMap = new Map();
             teamsSnapshot.forEach(doc => {
                 teamNameMap.set(doc.id, doc.data().name);
             });
-
             rosterSnapshot.forEach(doc => {
                 const player = doc.data();
                 const assignment = player.assignments ? player.assignments[activeEventId] : null;
@@ -189,7 +185,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const teamName = teamNameMap.get(teamId) || teamId;
                 csvContent += `"${player.name}","${player.availability}","${teamName}","${role}"\n`;
             });
-            
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);
@@ -210,10 +205,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 eventSelector.innerHTML = '<option value="">No events found</option>';
                 return;
             }
-            
             eventSelector.innerHTML = '';
             allEventIds = [];
-            
             eventsSnapshot.forEach((doc, index) => {
                 const event = doc.data();
                 const option = document.createElement('option');
@@ -226,12 +219,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     eventSelector.value = doc.id;
                 }
             });
-            
             console.log(`Found ${allEventIds.length} events. Defaulting to ${activeEventId}.`);
             loadData();
         } catch (error) {
             console.error("Error loading events: ", error);
             eventSelector.innerHTML = '<option value="">Error loading</option>';
+        } finally {
+            // NEW: This will always run, hiding the loading screen
+            // and showing the main app content.
+            loadingContainer.style.display = 'none';
+            mainContent.style.display = 'flex';
         }
     }
     
@@ -241,63 +238,48 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log("loadData called, but no active event. Waiting for selector.");
             return;
         }
-        
         console.log(`Loading data for event: ${activeEventId}`);
         sortableInstances.forEach(instance => instance.destroy());
         sortableInstances = [];
-        
         mainRosterList.innerHTML = '<li>Loading...</li>';
         teamGrid.innerHTML = '';
-        
         let assignedCount = 0;
         let totalCount = 0;
-
         try {
             const teamsSnapshot = await db.collection('teams').where('eventId', '==', activeEventId).get();
             const rosterSnapshot = await db.collection('roster').get();
-            
             totalCount = rosterSnapshot.size;
-            
             const playersByTeam = new Map();
             playersByTeam.set('unassigned', []);
-            
             rosterSnapshot.forEach(doc => {
                 const player = doc.data();
                 player.id = doc.id;
-                
                 const defaultAssignment = { team: 'unassigned', role: 'member' };
                 const assignment = (player.assignments && player.assignments[activeEventId]) 
                                     ? player.assignments[activeEventId] 
                                     : defaultAssignment;
-                
                 const teamId = assignment.team || 'unassigned';
                 player.role = assignment.role || 'member';
-                
                 if (!playersByTeam.has(teamId)) {
                     playersByTeam.set(teamId, []);
                 }
                 playersByTeam.get(teamId).push(player);
-
                 if (teamId !== 'unassigned') {
                     assignedCount++;
                 }
             });
-
             mainRosterList.innerHTML = '';
             playersByTeam.get('unassigned').sort(sortPlayers).forEach(player => {
                 mainRosterList.appendChild(createPlayerLi(player));
             });
-
             teamsSnapshot.forEach(teamDoc => {
                 const teamData = teamDoc.data();
                 teamData.id = teamDoc.id;
                 const teamPlayers = playersByTeam.get(teamData.id) || [];
                 renderTeam(teamData, teamPlayers);
             });
-
             rosterHeading.textContent = `My Roster (${assignedCount} / ${totalCount})`;
             console.log("Data loading and rendering complete.");
-            
             initializeSortable();
         } catch (error) {
             console.error("Error loading all data: ", error);
@@ -307,6 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- createPlayerLi ---
     function createPlayerLi(player) {
+        // (This function is unchanged from the last working version)
         const li = document.createElement('li');
         li.className = 'player-li';
         li.dataset.id = player.id;
@@ -330,6 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- sortPlayers ---
     function sortPlayers(a, b) {
+        // (This function is unchanged from the last working version)
         const roleOrder = { 'group_leader': 1, 'rally_leader': 2, 'member': 3 };
         const roleA = roleOrder[a.role || 'member'];
         const roleB = roleOrder[b.role || 'member'];
@@ -339,6 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- renderTeam ---
     function renderTeam(teamData, teamPlayers) {
+        // (This function is unchanged from the last working version)
         const teamContainer = document.createElement('div');
         teamContainer.className = 'team-container';
         teamContainer.dataset.teamId = teamData.id; 
@@ -375,6 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- updatePlayerRole ---
     function updatePlayerRole(playerId, newRole) {
+        // (This function is unchanged from the last working version)
         if (!activeEventId) return;
         console.log(`Setting player ${playerId} to role ${newRole} for event ${activeEventId}`);
         const updatePath = `assignments.${activeEventId}.role`;
@@ -393,6 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- addNewTeam ---
     function addNewTeam() {
+        // (This function is unchanged from the last working version)
         if (!activeEventId) return;
         console.log(`Adding new team for event ${activeEventId}`);
         db.collection('teams').add({
@@ -406,6 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- deleteTeam ---
     async function deleteTeam(teamId, teamName) {
+        // (This function is unchanged from the last working version)
         if (!activeEventId) return;
         if (!confirm(`Are you sure you want to delete "${teamName}"? This will only remove it from the ${activeEventId} event.`)) return;
         try {
@@ -428,8 +416,39 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { console.error("Error deleting team: ", error); }
     }
     
+    // --- NEW: deletePlayer (Permanent) ---
+    async function deletePlayer(playerId) {
+        if (!playerId) return;
+
+        // Find the player's name for the confirm dialog
+        let playerName = `this player (ID: ${playerId})`;
+        try {
+            const playerDoc = await db.collection('roster').doc(playerId).get();
+            if (playerDoc.exists) {
+                playerName = playerDoc.data().name;
+            }
+        } catch (e) {
+            console.warn("Couldn't fetch player name for confirm dialog.");
+        }
+
+        if (!confirm(`Are you sure you want to PERMANENTLY delete ${playerName}? This cannot be undone.`)) {
+            return;
+        }
+        
+        console.log(`Deleting player ${playerId}...`);
+        try {
+            await db.collection('roster').doc(playerId).delete();
+            console.log("Player permanently deleted.");
+            loadData(); // Reload the UI
+        } catch (error) {
+            console.error("Error deleting player: ", error);
+            alert("An error occurred while trying to delete the player.");
+        }
+    }
+    
     // --- updateTeamData ---
     function updateTeamData(teamId, dataToUpdate) {
+        // (This function is unchanged from the last working version)
         db.collection('teams').doc(teamId).update(dataToUpdate)
             .then(() => console.log(`Team ${teamId} updated`))
             .catch(error => console.error("Error updating team: ", error));
@@ -437,6 +456,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- clearAllTeams ---
     async function clearAllTeams() {
+        // (This function is unchanged from the last working version)
         if (!activeEventId) return;
         if (!confirm(`Are you sure you want to clear all teams for ${activeEventId}? All players in this event will be moved to the roster and roles reset.`)) return;
         console.log(`Clearing all teams for ${activeEventId}...`);
@@ -464,6 +484,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- initializeSortable ---
     function initializeSortable() {
+        // (This function is unchanged from the last working version)
         if (!activeEventId) return;
         const lists = document.querySelectorAll('.roster-list-group');
         lists.forEach(list => {
