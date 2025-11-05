@@ -13,11 +13,10 @@ header {
     padding: 1rem 0;
     text-align: center;
     border-bottom: 1px solid #555;
-    /* NEW: Needed for positioning the help button */
     position: relative; 
 }
 
-/* NEW: Help Button Style */
+/* Help Button Style */
 #help-button {
     position: absolute;
     top: 10px;
@@ -46,7 +45,16 @@ header {
     border-radius: 4px;
 }
 
+/* NEW: Loading Container Style */
+#loading-container {
+    padding: 40px;
+    text-align: center;
+    font-size: 1.5em;
+    color: #aaa;
+}
+
 main {
+    /* Main is hidden by default via inline style, JS will show it */
     display: flex;
     justify-content: space-around;
     padding: 1rem;
@@ -77,7 +85,7 @@ main {
 }
 h1, h2, h3 { margin-top: 0; color: #fff; }
 
-/* NEW: Instruction Box Style */
+/* Instruction Box Style */
 .instructions-box {
     background-color: #2a2a2a;
     border: 1px solid #444;
@@ -237,9 +245,12 @@ h1, h2, h3 { margin-top: 0; color: #fff; }
     background-color: #4a90e2;
     color: #fff;
 }
-/* ... (rest of context menu styles) ... */
+/* NEW: Danger item style */
+.context-menu-item.danger-item:hover {
+    background-color: #a04040;
+}
 
-/* --- NEW: Modal (Popup) Styles --- */
+/* --- Modal (Popup) Styles --- */
 .modal-overlay {
     display: none; /* Hidden by default */
     position: fixed;
